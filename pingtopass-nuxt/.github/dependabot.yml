@@ -1,0 +1,62 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "ciscoittech"
+    assignees:
+      - "ciscoittech"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+    labels:
+      - "dependencies"
+      - "automated"
+    # Group dependencies by type
+    groups:
+      nuxt-ecosystem:
+        patterns:
+          - "nuxt*"
+          - "@nuxt/*"
+          - "vue*"
+          - "@vue/*"
+      cloudflare-ecosystem:
+        patterns:
+          - "wrangler*"
+          - "@cloudflare/*"
+      database-ecosystem:
+        patterns:
+          - "drizzle-*"
+          - "@libsql/*"
+          - "turso*"
+      dev-dependencies:
+        dependency-type: "development"
+      security-updates:
+        dependency-type: "production"
+        update-types:
+          - "version-update:semver-patch"
+          - "version-update:semver-minor"
+
+  # Enable security updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "ciscoittech"
+    assignees:
+      - "ciscoittech"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "github-actions"
+      - "automated"

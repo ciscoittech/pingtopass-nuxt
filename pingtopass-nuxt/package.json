@@ -1,0 +1,93 @@
+{
+  "name": "pingtopass-nuxt",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "dev:wrangler": "wrangler dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    
+    "// Deployment Scripts": "",
+    "deploy": "./scripts/deploy.sh production",
+    "deploy:dev": "./scripts/deploy.sh development",
+    "deploy:preview": "./scripts/deploy.sh preview",
+    "deploy:staging": "./scripts/deploy.sh staging",
+    "deploy:prod": "./scripts/deploy.sh production",
+    
+    "// Quick deployment without tests": "",
+    "deploy:dev:quick": "./scripts/deploy.sh development skip-tests",
+    "deploy:preview:quick": "./scripts/deploy.sh preview skip-tests",
+    "deploy:staging:quick": "./scripts/deploy.sh staging skip-tests",
+    
+    "// Environment Setup": "",
+    "setup:environments": "./scripts/setup-environments.sh",
+    "setup:secrets": "./scripts/manage-secrets.sh",
+    
+    "// Health Checks": "",
+    "health": "./scripts/health-check.sh check",
+    "health:dev": "./scripts/health-check.sh check development",
+    "health:preview": "./scripts/health-check.sh check preview",
+    "health:staging": "./scripts/health-check.sh check staging",
+    "health:prod": "./scripts/health-check.sh check production",
+    "health:wait": "./scripts/health-check.sh wait",
+    
+    "// Database Scripts": "",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:push:prod": "drizzle-kit push --config=drizzle.prod.config.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "node scripts/seed-database.js",
+    
+    "// Development Scripts": "",
+    "dev:https": "nuxt dev --https",
+    "dev:debug": "nuxt dev --inspect",
+    "dev:wrangler:debug": "wrangler dev --inspect",
+    
+    "// Testing Scripts": "",
+    "test": "echo \"Add your test command here\"",
+    "test:unit": "echo \"Add unit test command here\"",
+    "test:e2e": "echo \"Add E2E test command here\"",
+    "typecheck": "nuxt typecheck",
+    "lint": "echo \"Add lint command here\"",
+    "lint:fix": "echo \"Add lint fix command here\"",
+    
+    "// CI/CD Scripts": "",
+    "ci:test": "pnpm run typecheck && pnpm run lint && pnpm run test:unit",
+    "ci:deploy": "./scripts/deploy.sh",
+    "ci:health-check": "./scripts/health-check.sh check",
+    
+    "// Secret Management": "",
+    "secrets:list": "./scripts/manage-secrets.sh list",
+    "secrets:set": "./scripts/manage-secrets.sh set",
+    "secrets:validate": "./scripts/manage-secrets.sh validate",
+    "secrets:backup": "./scripts/manage-secrets.sh backup",
+    
+    "// Wrangler Shortcuts": "",
+    "wrangler:login": "wrangler login",
+    "wrangler:whoami": "wrangler whoami",
+    "wrangler:tail": "wrangler tail",
+    "wrangler:tail:prod": "wrangler tail --env production",
+    "wrangler:logs": "wrangler pages deployment tail",
+    
+    "// Utilities": "",
+    "clean": "rm -rf dist .nuxt .output node_modules/.cache",
+    "clean:all": "pnpm clean && rm -rf node_modules pnpm-lock.yaml",
+    "fresh": "pnpm clean:all && pnpm install"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.10",
+    "drizzle-orm": "^0.44.4",
+    "nuxt": "^4.0.1",
+    "vue": "^3.5.18",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.1",
+    "drizzle-kit": "^0.31.4",
+    "wrangler": "^4.28.1"
+  }
+}

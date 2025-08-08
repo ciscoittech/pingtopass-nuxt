@@ -1,0 +1,148 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["feature", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What's the user pain point?
+      placeholder: As a user, I'm frustrated when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe your preferred solution to the problem
+      placeholder: I would like to see...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Describe any alternative solutions or features you've considered
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: User Stories
+      description: Write user stories that capture the feature requirements
+      placeholder: |
+        As a [type of user], I want [goal] so that [reason].
+        
+        Example:
+        As a student, I want to bookmark difficult questions so that I can review them later.
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Define what "done" looks like for this feature
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+
+  - type: dropdown
+    id: user-type
+    attributes:
+      label: Primary User Type
+      description: Who would primarily benefit from this feature?
+      options:
+        - Students (taking exams)
+        - Instructors (creating content)
+        - Administrators (managing platform)
+        - All users
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How important is this feature?
+      options:
+        - High (Critical for user satisfaction)
+        - Medium (Important but not urgent)
+        - Low (Nice to have)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple (1-2 days)
+        - Medium (1 week)
+        - Complex (2-4 weeks)
+        - Very Complex (1+ months)
+        - Not sure
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups/Wireframes
+      description: If you have visual ideas, attach mockups, wireframes, or sketches
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples/References
+      description: Link to examples from other platforms that implement similar features
+
+  - type: checkboxes
+    id: feature-areas
+    attributes:
+      label: Feature Areas
+      description: Which areas of the platform would this feature affect?
+      options:
+        - label: Exam interface
+        - label: Question management
+        - label: User authentication
+        - label: Progress tracking
+        - label: Reporting/Analytics
+        - label: Admin interface
+        - label: API endpoints
+        - label: Database schema
+        - label: UI/UX design
+        - label: Performance
+        - label: Security
+
+  - type: textarea
+    id: technical-considerations
+    attributes:
+      label: Technical Considerations
+      description: Any technical aspects to consider (API changes, database changes, etc.)
+
+  - type: textarea
+    id: business-impact
+    attributes:
+      label: Business Impact
+      description: How would this feature impact the business? (user retention, engagement, revenue, etc.)
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues to ensure this feature hasn't been requested
+          required: true
+        - label: I have clearly described the problem this feature would solve
+          required: true
+        - label: I have provided specific acceptance criteria
+          required: true

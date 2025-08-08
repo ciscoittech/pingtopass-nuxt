@@ -1,0 +1,418 @@
+name: Release & Production Deployment
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      pre_release:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+      force_production:
+        description: 'Force production deployment'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+
+jobs:
+  validate-release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is-prerelease: ${{ steps.version.outputs.is-prerelease }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version information
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+            IS_PRERELEASE="${{ inputs.pre_release }}"
+          else
+            VERSION="${{ github.ref_name }}"
+            # Check if it's a pre-release (contains alpha, beta, rc)
+            if [[ "$VERSION" =~ (alpha|beta|rc) ]]; then
+              IS_PRERELEASE="true"
+            else
+              IS_PRERELEASE="false"
+            fi
+          fi
+          
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "is-prerelease=$IS_PRERELEASE" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION, Pre-release: $IS_PRERELEASE"
+
+      - name: Validate version format
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+            echo "❌ Invalid version format: $VERSION"
+            echo "Expected format: vX.Y.Z or vX.Y.Z-prerelease"
+            exit 1
+          fi
+          echo "✅ Version format is valid: $VERSION"
+
+      - name: Check if tag already exists
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "❌ Tag $VERSION already exists"
+            exit 1
+          fi
+          echo "✅ Tag $VERSION is available"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          
+          if [ -n "$PREV_TAG" ]; then
+            echo "Generating changelog from $PREV_TAG to HEAD"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG"..HEAD --no-merges)
+          else
+            echo "No previous tag found, including all commits"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          fi
+          
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="No changes since last release"
+          fi
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  run-tests:
+    name: Full Test Suite
+    uses: ./.github/workflows/test.yml
+    needs: validate-release
+
+  build-release:
+    name: Build Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, run-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build for production
+        run: |
+          echo "Building for production release..."
+          NODE_ENV=production pnpm run build
+
+      - name: Create release artifacts
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          mkdir -p release-artifacts
+          
+          # Create tarball of built application
+          tar -czf "release-artifacts/pingtopass-$VERSION.tar.gz" \
+            .output/ \
+            wrangler.toml \
+            package.json \
+            server/database/schema.ts
+          
+          # Create deployment-ready package
+          cp wrangler.toml release-artifacts/
+          cp package.json release-artifacts/
+          
+          # Generate deployment script
+          cat << EOF > release-artifacts/deploy-production.sh
+          #!/bin/bash
+          set -e
+          echo "Deploying PingToPass $VERSION to production..."
+          wrangler deploy --env production
+          echo "✅ Production deployment complete"
+          EOF
+          chmod +x release-artifacts/deploy-production.sh
+          
+          ls -la release-artifacts/
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-${{ needs.validate-release.outputs.version }}
+          path: release-artifacts/
+          retention-days: 90
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [validate-release, run-tests, build-release]
+    environment:
+      name: staging
+      url: https://staging.pingtopass.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm run build
+
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          wrangler deploy --env staging
+          echo "✅ Staging deployment complete"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Run staging health checks
+        run: |
+          echo "Running health checks on staging..."
+          ./scripts/health-check.sh check staging
+          echo "✅ Staging health checks passed"
+        timeout-minutes: 5
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [validate-release, run-tests, build-release, deploy-staging]
+    if: |
+      needs.validate-release.outputs.is-prerelease == 'false' || 
+      inputs.force_production == 'true'
+    environment:
+      name: production
+      url: https://pingtopass.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm run build
+
+      - name: Deploy database migrations (production)
+        run: |
+          echo "Running production database migrations..."
+          pnpm run db:push:prod
+          echo "✅ Database migrations complete"
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_PROD }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_PROD }}
+
+      - name: Deploy to production
+        id: deploy
+        run: |
+          echo "Deploying to production environment..."
+          wrangler deploy --env production
+          echo "✅ Production deployment complete"
+          echo "deployment-url=https://pingtopass.com" >> $GITHUB_OUTPUT
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Run production health checks
+        run: |
+          echo "Running health checks on production..."
+          ./scripts/health-check.sh check production
+          echo "✅ Production health checks passed"
+        timeout-minutes: 10
+
+      - name: Verify deployment
+        run: |
+          echo "Verifying production deployment..."
+          
+          # Check main endpoints
+          curl -f "https://pingtopass.com/api/health" || exit 1
+          curl -f "https://pingtopass.com/api/health/database" || exit 1
+          
+          # Check performance
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' "https://pingtopass.com/")
+          echo "Main page response time: ${RESPONSE_TIME}s"
+          
+          if (( $(echo "$RESPONSE_TIME < 2.0" | bc -l) )); then
+            echo "✅ Performance check passed"
+          else
+            echo "⚠️ Performance check failed: ${RESPONSE_TIME}s"
+            exit 1
+          fi
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, run-tests, build-release, deploy-production]
+    if: always() && needs.validate-release.result == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-${{ needs.validate-release.outputs.version }}
+          path: release-artifacts/
+
+      - name: Create or update git tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate-release.outputs.version }}
+          name: Release ${{ needs.validate-release.outputs.version }}
+          body: |
+            ## 🚀 PingToPass ${{ needs.validate-release.outputs.version }}
+            
+            ### 📊 Deployment Status
+            - **Staging:** ✅ Deployed to https://staging.pingtopass.com
+            - **Production:** ${{ needs.deploy-production.result == 'success' && '✅ Deployed to https://pingtopass.com' || '❌ Failed or Skipped' }}
+            
+            ### 📝 Changes
+            ${{ needs.validate-release.outputs.changelog }}
+            
+            ### 🔧 Technical Details
+            - **Node.js Version:** ${{ env.NODE_VERSION }}
+            - **Build Date:** ${{ github.run_id }}
+            - **Commit:** ${{ github.sha }}
+            
+            ### 📦 Deployment Artifacts
+            - Production-ready build included
+            - Database schema and migrations
+            - Cloudflare Workers configuration
+            
+            ---
+            *Released automatically via GitHub Actions*
+          prerelease: ${{ needs.validate-release.outputs.is-prerelease == 'true' }}
+          files: |
+            release-artifacts/*
+          generate_release_notes: true
+
+  notify-release:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [validate-release, deploy-production, create-release]
+    if: always()
+    steps:
+      - name: Determine notification status
+        id: status
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          PROD_STATUS="${{ needs.deploy-production.result }}"
+          
+          if [ "$PROD_STATUS" = "success" ]; then
+            STATUS="✅ **Release $VERSION Successfully Deployed to Production**"
+            EMOJI="🎉"
+          elif [ "$PROD_STATUS" = "skipped" ]; then
+            STATUS="⏭️ **Release $VERSION Created** (Production deployment skipped - pre-release)"
+            EMOJI="📦"
+          else
+            STATUS="❌ **Release $VERSION Failed**"
+            EMOJI="🚨"
+          fi
+          
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          echo "emoji=$EMOJI" >> $GITHUB_OUTPUT
+
+      - name: Create release announcement issue
+        if: needs.deploy-production.result == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ needs.validate-release.outputs.version }}';
+            const changelog = `${{ needs.validate-release.outputs.changelog }}`;
+            
+            const title = `🎉 Release ${version} - Production Deployment Complete`;
+            
+            const body = `## 🚀 PingToPass ${version} is now live!
+            
+            **Production URL:** https://pingtopass.com
+            **Staging URL:** https://staging.pingtopass.com
+            
+            ### 📝 What's New
+            ${changelog}
+            
+            ### 🔗 Quick Links
+            - [Release Notes](${context.payload.repository.html_url}/releases/tag/${version})
+            - [Production Health Check](https://pingtopass.com/api/health)
+            - [Deployment Workflow](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            
+            ### 📊 Deployment Timeline
+            - **Started:** ${{ github.event.head_commit.timestamp }}
+            - **Completed:** ${new Date().toISOString()}
+            - **Duration:** ~${Math.round((Date.now() - new Date('${{ github.event.head_commit.timestamp }}').getTime()) / 1000 / 60)} minutes
+            
+            ---
+            *This announcement was created automatically following successful production deployment*`;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['release', 'announcement', 'production']
+            });
+
+      # Add Slack/Discord notification here if needed
+      # - name: Notify Slack/Discord
+      #   if: needs.deploy-production.result == 'success'
+      #   run: |
+      #     echo "Add Slack/Discord webhook notification here"

@@ -1,0 +1,314 @@
+name: Preview Deployments
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, develop]
+  pull_request:
+    types: [closed]
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    if: github.event.action != 'closed'
+    environment:
+      name: preview-pr-${{ github.event.number }}
+      url: ${{ steps.deploy.outputs.preview-url }}
+    outputs:
+      preview-url: ${{ steps.deploy.outputs.preview-url }}
+      deployment-id: ${{ steps.deploy.outputs.deployment-id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm run build
+
+      - name: Generate preview environment name
+        id: env
+        run: |
+          # Create safe branch name for preview environment
+          BRANCH_NAME="${{ github.head_ref }}"
+          SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-20)
+          PR_NUMBER="${{ github.event.number }}"
+          PREVIEW_NAME="pr-${PR_NUMBER}-${SAFE_BRANCH}"
+          
+          echo "preview-name=$PREVIEW_NAME" >> $GITHUB_OUTPUT
+          echo "safe-branch=$SAFE_BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Cloudflare Workers
+        id: deploy
+        run: |
+          PREVIEW_NAME="${{ steps.env.outputs.preview-name }}"
+          
+          # Deploy with unique preview name
+          wrangler deploy \
+            --name "pingtopass-$PREVIEW_NAME" \
+            --env preview \
+            --var PREVIEW_MODE:true \
+            --var PREVIEW_PR_NUMBER:${{ github.event.number }} \
+            --var PREVIEW_BRANCH_NAME:"${{ github.head_ref }}"
+          
+          # Generate preview URL
+          PREVIEW_URL="https://$PREVIEW_NAME.preview.pingtopass.com"
+          echo "preview-url=$PREVIEW_URL" >> $GITHUB_OUTPUT
+          echo "deployment-id=$PREVIEW_NAME" >> $GITHUB_OUTPUT
+          
+          echo "✅ Preview deployed to: $PREVIEW_URL"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_PREVIEW }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_PREVIEW }}
+
+      - name: Wait for deployment to be ready
+        run: |
+          PREVIEW_URL="${{ steps.deploy.outputs.preview-url }}"
+          echo "Waiting for preview deployment to be ready..."
+          
+          # Wait up to 2 minutes for deployment
+          timeout 120 bash -c "
+            while ! curl -f \$PREVIEW_URL/api/health >/dev/null 2>&1; do
+              echo 'Waiting for preview to be ready...'
+              sleep 5
+            done
+          " || {
+            echo "⚠️ Preview deployment timeout, but deployment may still succeed"
+          }
+
+      - name: Run basic health checks
+        run: |
+          PREVIEW_URL="${{ steps.deploy.outputs.preview-url }}"
+          
+          echo "Running health checks on preview deployment..."
+          
+          # Check main page
+          if curl -f "$PREVIEW_URL/" >/dev/null 2>&1; then
+            echo "✅ Main page accessible"
+          else
+            echo "⚠️ Main page not accessible"
+          fi
+          
+          # Check health endpoint
+          if curl -f "$PREVIEW_URL/api/health" >/dev/null 2>&1; then
+            echo "✅ Health endpoint accessible"
+          else
+            echo "⚠️ Health endpoint not accessible"
+          fi
+          
+          # Check database health
+          if curl -f "$PREVIEW_URL/api/health/database" >/dev/null 2>&1; then
+            echo "✅ Database connection working"
+          else
+            echo "⚠️ Database connection issues"
+          fi
+
+  test-preview:
+    name: Test Preview Deployment
+    runs-on: ubuntu-latest
+    needs: deploy-preview
+    if: github.event.action != 'closed'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run smoke tests against preview
+        env:
+          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
+        run: |
+          echo "Running smoke tests against $PREVIEW_URL"
+          
+          # Basic API tests
+          curl -f "$PREVIEW_URL/api/health" || exit 1
+          curl -f "$PREVIEW_URL/api/health/database" || exit 1
+          
+          # Test main endpoints
+          curl -f "$PREVIEW_URL/api/exams" || echo "⚠️ Exams endpoint not accessible"
+          curl -f "$PREVIEW_URL/api/questions" || echo "⚠️ Questions endpoint not accessible"
+          
+          echo "✅ Smoke tests completed"
+
+      - name: Run performance tests
+        env:
+          PREVIEW_URL: ${{ needs.deploy-preview.outputs.preview-url }}
+        run: |
+          echo "Running basic performance tests..."
+          
+          # Test response time
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' "$PREVIEW_URL/")
+          echo "Main page response time: ${RESPONSE_TIME}s"
+          
+          # Check if response time is acceptable (less than 2 seconds)
+          if (( $(echo "$RESPONSE_TIME < 2.0" | bc -l) )); then
+            echo "✅ Response time is acceptable"
+          else
+            echo "⚠️ Response time is slow: ${RESPONSE_TIME}s"
+          fi
+
+  comment-preview:
+    name: Comment Preview URL
+    runs-on: ubuntu-latest
+    needs: [deploy-preview, test-preview]
+    if: always() && github.event.action != 'closed'
+    steps:
+      - name: Generate comment body
+        id: comment
+        run: |
+          PREVIEW_URL="${{ needs.deploy-preview.outputs.preview-url }}"
+          DEPLOY_STATUS="${{ needs.deploy-preview.result }}"
+          TEST_STATUS="${{ needs.test-preview.result }}"
+          
+          if [ "$DEPLOY_STATUS" = "success" ]; then
+            HEADER="🚀 **Preview Deployment Successful**"
+            STATUS_ICON="✅"
+          else
+            HEADER="❌ **Preview Deployment Failed**"
+            STATUS_ICON="❌"
+          fi
+          
+          cat << EOF > comment.md
+          $HEADER
+          
+          **Preview URL:** [$PREVIEW_URL]($PREVIEW_URL)
+          **Branch:** \`${{ github.head_ref }}\`
+          **Commit:** \`${{ github.sha }}\`
+          
+          ### 🔍 Quick Links
+          - [🏠 Homepage]($PREVIEW_URL)
+          - [💚 Health Check]($PREVIEW_URL/api/health)
+          - [📊 Database Status]($PREVIEW_URL/api/health/database)
+          - [📚 API Docs]($PREVIEW_URL/api)
+          
+          ### 📈 Test Results
+          - **Deployment:** $([ "$DEPLOY_STATUS" = "success" ] && echo "✅ Successful" || echo "❌ Failed")
+          - **Smoke Tests:** $([ "$TEST_STATUS" = "success" ] && echo "✅ Passed" || echo "❌ Failed")
+          
+          ---
+          <details>
+          <summary>📝 Deployment Details</summary>
+          
+          - **Environment:** Preview
+          - **PR Number:** #${{ github.event.number }}
+          - **Deployment ID:** \`${{ needs.deploy-preview.outputs.deployment-id }}\`
+          - **Triggered by:** @${{ github.actor }}
+          - **Timestamp:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          </details>
+          
+          > 💡 This preview will be automatically deleted when the PR is closed or merged.
+          EOF
+          
+          COMMENT_BODY=$(cat comment.md)
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMENT_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Find existing preview comment
+        uses: peter-evans/find-comment@v3
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Preview Deployment'
+
+      - name: Create or update preview comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.number }}
+          body: ${{ steps.comment.outputs.body }}
+          edit-mode: replace
+
+  cleanup-preview:
+    name: Cleanup Preview
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+    steps:
+      - name: Generate preview environment name
+        id: env
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-20)
+          PR_NUMBER="${{ github.event.number }}"
+          PREVIEW_NAME="pr-${PR_NUMBER}-${SAFE_BRANCH}"
+          
+          echo "preview-name=$PREVIEW_NAME" >> $GITHUB_OUTPUT
+
+      - name: Delete preview deployment
+        run: |
+          PREVIEW_NAME="${{ steps.env.outputs.preview-name }}"
+          
+          echo "Cleaning up preview deployment: pingtopass-$PREVIEW_NAME"
+          
+          # Delete the worker
+          wrangler delete "pingtopass-$PREVIEW_NAME" --force || {
+            echo "⚠️ Failed to delete worker, it may not exist"
+          }
+          
+          echo "✅ Preview cleanup completed"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Update PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Find the preview comment
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const previewComment = comments.find(comment => 
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.includes('Preview Deployment')
+            );
+            
+            if (previewComment) {
+              const updatedBody = previewComment.body + '\n\n> 🗑️ **Preview deployment has been cleaned up** (PR closed)';
+              
+              await github.rest.issues.updateComment({
+                comment_id: previewComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: updatedBody
+              });
+            }

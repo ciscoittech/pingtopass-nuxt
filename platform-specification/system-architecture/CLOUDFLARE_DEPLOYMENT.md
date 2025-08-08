@@ -1,91 +1,100 @@
-# Cloudflare Deployment Strategy - Edge-First Production Architecture
+# Cloudflare Workers Deployment Strategy - Unified Edge Architecture
 
 ## 1. Deployment Overview
 
 ### Architecture Stack
-- **Hosting**: Cloudflare Pages (static) + Workers (API)
-- **Database**: Turso (distributed SQLite)
-- **CDN**: Cloudflare global network
-- **CI/CD**: GitHub Actions → Cloudflare Pages
+- **Hosting**: Cloudflare Workers (full-stack Nuxt app)
+- **Database**: Turso (distributed SQLite via HTTP)
+- **CDN**: Cloudflare global network (built-in)
+- **CI/CD**: GitHub Actions → Cloudflare Workers
 - **Environments**: Development, Staging, Production
 
 ### Key Benefits
+- Single unified platform (Workers handles everything)
 - Zero cold starts with Workers
 - Global edge deployment
 - Built-in DDoS protection
 - Automatic SSL/TLS
-- Free tier generous limits
+- Better pricing model for our use case
 
 ## 2. Project Configuration
 
-### 2.1 Cloudflare Pages Setup
+### 2.1 Cloudflare Workers Setup
 ```bash
 # Install Wrangler CLI
-npm install -g wrangler
+npm install -D wrangler
 
 # Login to Cloudflare
 wrangler login
 
-# Initialize project
+# Initialize Nuxt for Workers
 npm create cloudflare@latest pingtopass-nuxt -- \
   --framework=nuxt \
   --typescript \
-  --git
+  --git \
+  --deploy-with=workers
 
-# Link to existing project
-wrangler pages project create pingtopass
+# Or for existing project, update nuxt.config.ts:
+# nitro: { preset: 'cloudflare-module' }
 ```
 
 ### 2.2 wrangler.toml Configuration
 ```toml
 name = "pingtopass"
+main = ".output/server/index.mjs"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
-[env.production]
-name = "pingtopass-production"
-vars = { ENVIRONMENT = "production" }
-kv_namespaces = [
-  { binding = "CACHE", id = "your-kv-namespace-id" }
-]
+# KV Namespaces for caching
+[[kv_namespaces]]
+binding = "CACHE"
+id = "pingtopass-cache"
+preview_id = "pingtopass-cache-preview"
 
-[env.staging]
-name = "pingtopass-staging"
-vars = { ENVIRONMENT = "staging" }
+# Queues for Twitter automation
+[[queues.producers]]
+queue = "twitter-tasks"
+binding = "TWITTER_QUEUE"
 
-[env.development]
-name = "pingtopass-dev"
-vars = { ENVIRONMENT = "development" }
+[[queues.consumers]]
+queue = "twitter-tasks"
+max_batch_size = 10
+max_batch_timeout = 30
+
+# Cron triggers
+[triggers]
+crons = ["0 * * * *"]  # Every hour for Twitter
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+APP_URL = "https://pingtopass.workers.dev"
+
+# Static assets
+[site]
+bucket = ".output/public"
 
 # Build configuration
 [build]
 command = "npm run build"
-upload_format = "modules"
-
-[build.upload]
-dir = ".output/public"
-main = ".output/server/index.mjs"
-
-# Routes
-[[routes]]
-include = ["/*"]
-exclude = ["/assets/*", "/favicon.ico"]
 ```
 
 ### 2.3 Environment Variables
 ```bash
-# Production secrets (set via Cloudflare dashboard or CLI)
-wrangler secret put TURSO_DATABASE_URL --env production
-wrangler secret put TURSO_AUTH_TOKEN --env production
-wrangler secret put JWT_SECRET --env production
-wrangler secret put GOOGLE_CLIENT_SECRET --env production
-wrangler secret put OPENROUTER_API_KEY --env production
-wrangler secret put STRIPE_SECRET_KEY --env production
-wrangler secret put STRIPE_WEBHOOK_SECRET --env production
+# Production secrets (set via CLI - never commit these)
+wrangler secret put TURSO_DATABASE_URL
+wrangler secret put TURSO_AUTH_TOKEN
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put OPENROUTER_API_KEY
+wrangler secret put JWT_SECRET
+wrangler secret put STRIPE_SECRET_KEY
+wrangler secret put STRIPE_WEBHOOK_SECRET
+wrangler secret put TWITTER_BEARER_TOKEN
 
-# Development secrets
+# For specific environments
+wrangler secret put TURSO_DATABASE_URL --env staging
 wrangler secret put TURSO_DATABASE_URL --env development
-# ... repeat for all secrets
 ```
 
 ## 3. Database Setup (Turso)
@@ -311,15 +320,17 @@ jobs:
           NUXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           NUXT_PUBLIC_STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY_TEST }}
       
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: pingtopass
-          directory: .output/public
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: staging
+          environment: staging
+          secrets: |
+            TURSO_DATABASE_URL
+            TURSO_AUTH_TOKEN
+            GOOGLE_CLIENT_SECRET
+            OPENROUTER_API_KEY
 
   deploy-production:
     needs: test
@@ -350,15 +361,17 @@ jobs:
           TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL_PROD }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN_PROD }}
       
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: pingtopass
-          directory: .output/public
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: main
+          environment: production
+          secrets: |
+            TURSO_DATABASE_URL
+            TURSO_AUTH_TOKEN
+            GOOGLE_CLIENT_SECRET
+            OPENROUTER_API_KEY
 ```
 
 ### 4.2 Preview Deployments
@@ -582,15 +595,16 @@ export default defineEventHandler(async (event) => {
 {
   "scripts": {
     "dev": "nuxt dev",
-    "build": "nuxt build",
-    "preview": "nuxt preview",
-    "deploy:dev": "wrangler pages deploy .output/public --project-name=pingtopass --branch=dev",
-    "deploy:staging": "wrangler pages deploy .output/public --project-name=pingtopass --branch=staging",
-    "deploy:prod": "wrangler pages deploy .output/public --project-name=pingtopass --branch=main",
+    "build": "nuxt build --preset cloudflare-module",
+    "preview": "wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:dev": "npm run build && wrangler deploy --env development",
+    "deploy:staging": "npm run build && wrangler deploy --env staging",
+    "deploy:prod": "npm run build && wrangler deploy --env production",
     "db:migrate": "tsx database/migrate.ts",
     "db:seed": "tsx database/seed.ts",
-    "logs:dev": "wrangler pages deployment tail --project-name=pingtopass --environment=preview",
-    "logs:prod": "wrangler pages deployment tail --project-name=pingtopass --environment=production"
+    "logs": "wrangler tail",
+    "logs:prod": "wrangler tail --env production"
   }
 }
 ```
@@ -606,25 +620,21 @@ npm install
 cp .env.example .env
 # Edit .env with your credentials
 
-# Local development
-npm run dev
+# Local development with Workers
+npm run build
+wrangler dev
 
 # Deploy to staging
-git checkout -b staging
-git push origin staging
-# GitHub Actions will auto-deploy
+wrangler deploy --env staging
 
 # Deploy to production
-git checkout main
-git merge staging
-git push origin main
-# GitHub Actions will auto-deploy
+wrangler deploy --env production
 
 # Monitor deployment
-wrangler pages deployment list --project-name=pingtopass
+wrangler deployments list
 
-# View logs
-npm run logs:prod
+# View real-time logs
+wrangler tail --env production
 ```
 
 ## 9. Rollback Strategy
@@ -632,13 +642,16 @@ npm run logs:prod
 ### 9.1 Instant Rollback
 ```bash
 # List deployments
-wrangler pages deployment list --project-name=pingtopass
+wrangler deployments list
+
+# View specific deployment
+wrangler deployments view <deployment-id>
 
 # Rollback to previous version
-wrangler pages rollback --project-name=pingtopass --deployment-id=<previous-id>
+wrangler rollback <deployment-id>
 
 # Or use Cloudflare Dashboard
-# Pages > pingtopass > Deployments > Rollback
+# Workers & Pages > pingtopass > Deployments > Rollback
 ```
 
 ### 9.2 Database Rollback
@@ -652,10 +665,12 @@ turso db backup restore pingtopass-prod --backup-id=<backup-id>
 
 ## 10. Cost Optimization
 
-### Free Tier Limits (Cloudflare)
-- **Workers**: 100,000 requests/day
-- **Pages**: Unlimited requests
+### Free Tier Limits (Cloudflare Workers)
+- **Requests**: 100,000 requests/day (free)
+- **CPU Time**: 10ms CPU time per request (free)
 - **KV Storage**: 100,000 reads/day
+- **Queues**: 1M messages/month
+- **Cron Triggers**: Unlimited
 - **Bandwidth**: Unlimited
 
 ### Turso Free Tier
@@ -666,17 +681,22 @@ turso db backup restore pingtopass-prod --backup-id=<backup-id>
 
 ### Monitoring Usage
 ```bash
-# Check Cloudflare usage
-wrangler pages usage --project-name=pingtopass
+# Check Workers usage
+wrangler analytics --env production
+
+# View metrics in dashboard
+open https://dash.cloudflare.com/workers-and-pages
 
 # Check Turso usage
 turso db usage pingtopass-prod
 ```
 
 This deployment strategy ensures:
+- **Unified platform** - Everything runs on Workers (no Pages needed)
 - **Zero-downtime deployments** with instant rollback
-- **Global edge distribution** for low latency
+- **Global edge distribution** for <200ms latency worldwide
 - **Automatic scaling** with no configuration
 - **Built-in security** with Cloudflare protection
-- **Cost-effective** within free tier limits
-- **Simple workflow** from dev to production
+- **Cost-effective** - $5/month for 10M requests (well within budget)
+- **Simplified workflow** - Single deployment target
+- **Integrated features** - Queues, Cron, KV all included
