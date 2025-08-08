@@ -1,0 +1,60 @@
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+*.log*
+loglevel.log
+logs
+
+# Misc
+.DS_Store
+.fleet
+.idea
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Test coverage
+coverage/
+*.lcov
+
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Database
+*.db
+*.db-*
+local.db
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Cloudflare
+wrangler-dist/
+
+# Build artifacts
+*.tgz
+*.tar.gz

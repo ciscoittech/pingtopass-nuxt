@@ -1,0 +1,29 @@
+name = "pingtopass"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[env.production]
+name = "pingtopass-production"
+vars = { ENVIRONMENT = "production" }
+
+[env.staging]
+name = "pingtopass-staging"
+vars = { ENVIRONMENT = "staging" }
+
+[env.development]
+name = "pingtopass-dev"
+vars = { ENVIRONMENT = "development" }
+
+# Build configuration
+[build]
+command = "npm run build"
+upload_format = "modules"
+
+[build.upload]
+dir = ".output/public"
+main = ".output/server/index.mjs"
+
+# Routes
+[[routes]]
+include = ["/*"]
+exclude = ["/assets/*", "/favicon.ico", "/_nuxt/*"]
