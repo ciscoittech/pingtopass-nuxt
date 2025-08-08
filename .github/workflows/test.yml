@@ -1,100 +1,274 @@
 name: Test Suite
 
 on:
+  push:
+    branches: [main, develop, 'feature/*']
   pull_request:
-    branches: [main, staging]
+    branches: [main, develop]
   schedule:
     # Run tests daily at 6 AM UTC
     - cron: '0 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  TURSO_DATABASE_URL: 'file:local.db'
+  TURSO_AUTH_TOKEN: 'test-token'
+  JWT_SECRET: 'test-jwt-secret'
+  GOOGLE_CLIENT_ID: 'test-google-client-id'
+  GOOGLE_CLIENT_SECRET: 'test-google-client-secret'
+  OPENROUTER_API_KEY: 'test-openrouter-key'
+  STRIPE_SECRET_KEY: 'test-stripe-key'
+  STRIPE_WEBHOOK_SECRET: 'test-webhook-secret'
 
 jobs:
-  unit-tests:
+  lint:
+    name: Lint & Type Check
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20]
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run unit tests
-        run: npm run test -- --coverage
-      
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: matrix.node-version == 20
-        with:
-          file: ./coverage/lcov.info
-
-  e2e-tests:
-    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit
       
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
-      
-      - name: Build application
-        run: npm run build
-      
-      - name: Run E2E tests
-        run: npm run test:e2e
-      
-      - name: Upload Playwright results
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: playwright-results
-          path: test-results/
-
-  type-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
+      - name: Run ESLint
+        run: npm run lint
       
       - name: Type check
         run: npm run typecheck
 
-  lint:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint
+    strategy:
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit
       
-      - name: Run ESLint
-        run: npm run lint
+      - name: Run unit tests (shard ${{ matrix.shard }}/4)
+        run: npm run test:unit -- --shard=${{ matrix.shard }}/4 --coverage
+      
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit-${{ matrix.shard }}
+          path: coverage/
+          retention-days: 7
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Run E2E tests (${{ matrix.browser }}, shard ${{ matrix.shard }}/2)
+        run: npm run test:e2e -- --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/2
+      
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: unit-tests
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-unit-*
+          merge-multiple: true
+          path: coverage/
+      
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: Merge coverage reports
+        run: |
+          npx nyc merge coverage coverage/coverage-final.json
+          npx nyc report --reporter=json-summary --reporter=html --reporter=text
+      
+      - name: Check coverage thresholds
+        run: |
+          COVERAGE=$(node -e "const c=require('./coverage/coverage-summary.json'); console.log(c.total.statements.pct)")
+          echo "Overall coverage: ${COVERAGE}%"
+          if [ $(echo "$COVERAGE < 85" | bc) -eq 1 ]; then
+            echo "❌ Coverage is below 85% threshold"
+            exit 1
+          fi
+          echo "✅ Coverage meets threshold"
+      
+      - name: Upload final coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+      
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+            
+            const comment = `## 📊 Test Coverage Report
+            
+            | Type | Coverage | Target | Status |
+            |------|----------|--------|--------|
+            | Statements | ${coverage.total.statements.pct.toFixed(2)}% | 85% | ${coverage.total.statements.pct >= 85 ? '✅' : '❌'} |
+            | Branches | ${coverage.total.branches.pct.toFixed(2)}% | 80% | ${coverage.total.branches.pct >= 80 ? '✅' : '❌'} |
+            | Functions | ${coverage.total.functions.pct.toFixed(2)}% | 85% | ${coverage.total.functions.pct >= 85 ? '✅' : '❌'} |
+            | Lines | ${coverage.total.lines.pct.toFixed(2)}% | 85% | ${coverage.total.lines.pct >= 85 ? '✅' : '❌'} |
+            
+            View the full report in the [Actions artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [unit-tests, e2e-tests]
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Run performance tests
+        run: npm run test:perf
+      
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: performance-results/
+          retention-days: 7
+
+  accessibility-tests:
+    name: Accessibility Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [unit-tests, e2e-tests]
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Run accessibility tests
+        run: npm run test:a11y
+      
+      - name: Upload accessibility report
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: a11y-report/
+          retention-days: 7
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [lint, unit-tests, e2e-tests, coverage-report]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" || 
+                "${{ needs.unit-tests.result }}" != "success" || 
+                "${{ needs.e2e-tests.result }}" != "success" ||
+                "${{ needs.coverage-report.result }}" != "success" ]]; then
+            echo "❌ Some tests failed"
+            exit 1
+          fi
+          echo "✅ All tests passed!"
