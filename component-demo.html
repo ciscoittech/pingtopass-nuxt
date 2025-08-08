@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PingToPass Vue Components Demo</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            padding: 2rem;
+        }
+        .demo-section {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .demo-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        .demo-description {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">PingToPass Vue Components</h1>
+            <p class="text-gray-600">Interactive demonstration of all core components</p>
+        </header>
+
+        <div class="demo-section">
+            <h2 class="demo-title">Question Card Component</h2>
+            <p class="demo-description">
+                A comprehensive question display component supporting multiple choice, multiple select, and drag & drop questions.
+            </p>
+            <div class="grid gap-6">
+                <!-- Multiple Choice Question -->
+                <question-card
+                    :question="sampleQuestion"
+                    :show-feedback="true"
+                    @answer-selected="onAnswerSelected"
+                />
+                
+                <!-- Multiple Select Question -->
+                <question-card
+                    :question="multipleSelectQuestion"
+                    :show-feedback="true"
+                    @answer-selected="onAnswerSelected"
+                />
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2 class="demo-title">Study Progress Component</h2>
+            <p class="demo-description">
+                A progress tracker showing study session statistics, time information, and achievement milestones.
+            </p>
+            <study-progress
+                :current-progress="studyProgress.current"
+                :total-questions="studyProgress.total"
+                :time-elapsed="studyProgress.timeElapsed"
+                :correct-answers="studyProgress.correct"
+                :incorrect-answers="studyProgress.incorrect"
+                :show-actions="true"
+                :can-pause="true"
+                :can-finish="true"
+                @milestone-reached="onMilestoneReached"
+            />
+        </div>
+
+        <div class="demo-section">
+            <h2 class="demo-title">Exam Timer Component</h2>
+            <p class="demo-description">
+                A countdown timer with controls, progress visualization, and warning system for timed exams.
+            </p>
+            <exam-timer
+                :duration="timerDuration"
+                :show-progress="true"
+                :show-progress-bar="true"
+                :warning-thresholds="[300, 120, 60]"
+                :critical-threshold="30"
+                @time-up="onTimeUp"
+                @warning="onWarning"
+                @critical="onCritical"
+            />
+        </div>
+
+        <div class="demo-section">
+            <h2 class="demo-title">Authentication Button Component</h2>
+            <p class="demo-description">
+                Google OAuth authentication with loading states, user display, and action buttons.
+            </p>
+            <div class="space-y-4">
+                <!-- Unauthenticated State -->
+                <div>
+                    <h3 class="font-semibold mb-2">Unauthenticated State:</h3>
+                    <auth-button
+                        :loading="authStates.loading"
+                        @login="handleLogin"
+                    />
+                </div>
+
+                <!-- Loading State -->
+                <div>
+                    <h3 class="font-semibold mb-2">Loading State:</h3>
+                    <auth-button :loading="true" />
+                </div>
+
+                <!-- Authenticated State -->
+                <div>
+                    <h3 class="font-semibold mb-2">Authenticated State:</h3>
+                    <auth-button
+                        :user="mockUser"
+                        :show-profile-button="true"
+                        :show-settings-button="true"
+                        @logout="handleLogout"
+                        @profile="handleProfile"
+                        @settings="handleSettings"
+                    />
+                </div>
+
+                <!-- Error State -->
+                <div>
+                    <h3 class="font-semibold mb-2">Error State:</h3>
+                    <auth-button
+                        :error="authStates.error"
+                        @error-cleared="clearError"
+                    />
+                </div>
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="demo-section">
+            <h2 class="demo-title">Event Log</h2>
+            <p class="demo-description">Real-time log of component events for debugging and demonstration.</p>
+            <div class="bg-gray-900 text-green-400 p-4 rounded-lg max-h-60 overflow-y-auto font-mono text-sm">
+                <div v-for="(event, index) in eventLog" :key="index" class="mb-1">
+                    <span class="text-gray-500">[{{ event.timestamp }}]</span>
+                    <span class="text-blue-400">{{ event.component }}</span>:
+                    <span>{{ event.event }}</span>
+                    <span v-if="event.data" class="text-yellow-400">{{ JSON.stringify(event.data) }}</span>
+                </div>
+                <div v-if="eventLog.length === 0" class="text-gray-500">
+                    No events yet. Interact with the components above to see events logged here.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, onMounted } = Vue;
+
+        // Sample data for demonstrations
+        const sampleQuestion = {
+            id: 1,
+            text: "What is the primary purpose of a router in computer networking?",
+            type: "multiple_choice",
+            difficulty: 3,
+            answers: [
+                { id: "a", text: "To connect different networks and forward data packets", is_correct: true },
+                { id: "b", text: "To store data permanently on a server", is_correct: false },
+                { id: "c", text: "To provide electrical power to network devices", is_correct: false },
+                { id: "d", text: "To display network traffic in real-time", is_correct: false }
+            ],
+            tags: ["networking", "hardware", "routing"]
+        };
+
+        const multipleSelectQuestion = {
+            id: 2,
+            text: "Which of the following are valid HTTP request methods? (Select all that apply)",
+            type: "multiple_select",
+            difficulty: 2,
+            answers: [
+                { id: "a", text: "GET", is_correct: true },
+                { id: "b", text: "POST", is_correct: true },
+                { id: "c", text: "SEND", is_correct: false },
+                { id: "d", text: "DELETE", is_correct: true },
+                { id: "e", text: "RECEIVE", is_correct: false }
+            ],
+            tags: ["http", "web", "protocols"]
+        };
+
+        const mockUser = {
+            id: "123",
+            name: "John Doe",
+            email: "john.doe@example.com",
+            picture: "https://via.placeholder.com/150/0066cc/ffffff?text=JD",
+            verified_email: true
+        };
+
+        // Simple component implementations for demo
+        const QuestionCard = {
+            props: ['question', 'showFeedback'],
+            emits: ['answer-selected'],
+            template: `
+                <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="bg-gray-100 px-3 py-1 rounded-full text-sm font-semibold text-gray-600">
+                            Question {{ question.id }}
+                        </span>
+                        <span class="px-2 py-1 rounded text-sm" :class="getDifficultyClass(question.difficulty)">
+                            Difficulty: {{ question.difficulty }}/5
+                        </span>
+                    </div>
+                    <p class="text-gray-800 font-medium mb-4">{{ question.text }}</p>
+                    <div class="space-y-3">
+                        <div v-for="answer in question.answers" :key="answer.id" 
+                             class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-gray-300"
+                             @click="selectAnswer(answer.id)">
+                            <input :type="question.type === 'multiple_select' ? 'checkbox' : 'radio'"
+                                   :name="'question-' + question.id" class="mr-3" />
+                            <span class="font-semibold mr-2">{{ answer.id.toUpperCase() }}.</span>
+                            <span>{{ answer.text }}</span>
+                        </div>
+                    </div>
+                    <div v-if="question.tags" class="flex flex-wrap gap-2 mt-4">
+                        <span v-for="tag in question.tags" :key="tag" 
+                              class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
+                            {{ tag }}
+                        </span>
+                    </div>
+                </div>
+            `,
+            methods: {
+                selectAnswer(answerId) {
+                    this.$emit('answer-selected', {
+                        questionId: this.question.id,
+                        answerId: answerId,
+                        isCorrect: this.question.answers.find(a => a.id === answerId)?.is_correct || false
+                    });
+                },
+                getDifficultyClass(difficulty) {
+                    const classes = {
+                        1: 'bg-green-100 text-green-800',
+                        2: 'bg-blue-100 text-blue-800',
+                        3: 'bg-yellow-100 text-yellow-800',
+                        4: 'bg-orange-100 text-orange-800',
+                        5: 'bg-red-100 text-red-800'
+                    };
+                    return classes[difficulty] || 'bg-gray-100 text-gray-800';
+                }
+            }
+        };
+
+        const StudyProgress = {
+            props: ['currentProgress', 'totalQuestions', 'timeElapsed', 'correctAnswers', 'incorrectAnswers', 'showActions', 'canPause', 'canFinish'],
+            emits: ['milestone-reached'],
+            template: `
+                <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <h3 class="text-lg font-semibold mb-4">Study Progress</h3>
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>{{ currentProgress }} of {{ totalQuestions }} questions</span>
+                            <span>{{ Math.round((currentProgress / totalQuestions) * 100) }}% complete</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+                                 :style="{width: (currentProgress / totalQuestions) * 100 + '%'}"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                        <div><span class="text-gray-500">Time Elapsed:</span> <span class="font-mono font-medium">{{ formatTime(timeElapsed) }}</span></div>
+                        <div><span class="text-gray-500">Estimated Remaining:</span> <span class="font-mono font-medium">{{ formatTime(estimatedRemaining) }}</span></div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-3 mb-4">
+                        <div class="bg-gray-50 p-3 rounded text-center">
+                            <div class="text-2xl font-bold">{{ correctAnswers }}</div>
+                            <div class="text-xs text-gray-500 uppercase">Correct</div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded text-center">
+                            <div class="text-2xl font-bold">{{ incorrectAnswers }}</div>
+                            <div class="text-xs text-gray-500 uppercase">Incorrect</div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded text-center">
+                            <div class="text-2xl font-bold">{{ accuracyRate }}%</div>
+                            <div class="text-xs text-gray-500 uppercase">Accuracy</div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded text-center">
+                            <div class="text-2xl font-bold">{{ avgTime }}s</div>
+                            <div class="text-xs text-gray-500 uppercase">Avg Time</div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            computed: {
+                accuracyRate() {
+                    const total = this.correctAnswers + this.incorrectAnswers;
+                    return total === 0 ? 0 : Math.round((this.correctAnswers / total) * 100);
+                },
+                avgTime() {
+                    return this.currentProgress === 0 ? 0 : Math.round(this.timeElapsed / this.currentProgress);
+                },
+                estimatedRemaining() {
+                    if (this.currentProgress === 0) return 0;
+                    const avgTime = this.timeElapsed / this.currentProgress;
+                    const remaining = this.totalQuestions - this.currentProgress;
+                    return Math.round(avgTime * remaining);
+                }
+            },
+            methods: {
+                formatTime(seconds) {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+                }
+            }
+        };
+
+        const ExamTimer = {
+            props: ['duration', 'showProgress', 'showProgressBar', 'warningThresholds', 'criticalThreshold'],
+            emits: ['time-up', 'warning', 'critical'],
+            data() {
+                return {
+                    timeRemaining: this.duration,
+                    isRunning: false,
+                    interval: null
+                };
+            },
+            template: `
+                <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="text-2xl">⏱️</div>
+                        <div>
+                            <div class="text-2xl font-mono font-bold">{{ formatTime(timeRemaining) }}</div>
+                            <div v-if="showProgress" class="text-sm text-gray-600">{{ Math.round(progressPercentage) }}% remaining</div>
+                        </div>
+                    </div>
+                    <div v-if="showProgressBar" class="mb-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-1000" 
+                                 :style="{width: progressPercentage + '%'}"></div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button v-if="!isRunning" @click="start" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Start
+                        </button>
+                        <button v-if="isRunning" @click="pause" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+                            Pause
+                        </button>
+                        <button @click="reset" class="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            `,
+            computed: {
+                progressPercentage() {
+                    return (this.timeRemaining / this.duration) * 100;
+                }
+            },
+            methods: {
+                start() {
+                    this.isRunning = true;
+                    this.interval = setInterval(() => {
+                        this.timeRemaining--;
+                        if (this.timeRemaining <= 0) {
+                            this.isRunning = false;
+                            clearInterval(this.interval);
+                            this.$emit('time-up');
+                        }
+                    }, 1000);
+                },
+                pause() {
+                    this.isRunning = false;
+                    clearInterval(this.interval);
+                },
+                reset() {
+                    this.isRunning = false;
+                    clearInterval(this.interval);
+                    this.timeRemaining = this.duration;
+                },
+                formatTime(seconds) {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    return mins.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+                }
+            }
+        };
+
+        const AuthButton = {
+            props: ['loading', 'user', 'error', 'showProfileButton', 'showSettingsButton'],
+            emits: ['login', 'logout', 'profile', 'settings', 'error-cleared'],
+            template: `
+                <div class="space-y-4">
+                    <div v-if="loading" class="flex items-center justify-center space-x-3 p-4 bg-gray-50 rounded-lg border">
+                        <div class="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Authenticating...</span>
+                    </div>
+                    
+                    <div v-else-if="!user" class="space-y-2">
+                        <button @click="$emit('login')" 
+                                class="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 flex items-center justify-center space-x-3 hover:bg-gray-50">
+                            <div class="w-5 h-5 bg-blue-500 rounded"></div>
+                            <span>Sign in with Google</span>
+                        </button>
+                        <p class="text-sm text-gray-500 text-center">Secure authentication powered by Google OAuth</p>
+                    </div>
+
+                    <div v-else class="bg-white border rounded-lg p-4 space-y-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center font-semibold text-blue-600">
+                                {{ getUserInitials(user.name) }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold truncate">{{ user.name }}</div>
+                                <div class="text-sm text-gray-600 truncate">{{ user.email }}</div>
+                                <div v-if="user.verified_email" class="text-xs text-green-600">✓ Verified</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button v-if="showProfileButton" @click="$emit('profile')" 
+                                    class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+                                Profile
+                            </button>
+                            <button v-if="showSettingsButton" @click="$emit('settings')" 
+                                    class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+                                Settings
+                            </button>
+                            <button @click="$emit('logout')" 
+                                    class="px-3 py-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                                Sign out
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center space-x-2">
+                            <span>⚠️</span>
+                            <span class="text-red-800 font-medium">{{ error }}</span>
+                        </div>
+                        <button @click="$emit('error-cleared')" class="text-sm text-red-600 hover:text-red-800 mt-2">
+                            Dismiss
+                        </button>
+                    </div>
+                </div>
+            `,
+            methods: {
+                getUserInitials(name) {
+                    return name.split(' ').map(n => n.charAt(0).toUpperCase()).slice(0, 2).join('');
+                }
+            }
+        };
+
+        createApp({
+            components: {
+                QuestionCard,
+                StudyProgress,
+                ExamTimer,
+                AuthButton
+            },
+            setup() {
+                const eventLog = ref([]);
+                const studyProgress = reactive({
+                    current: 7,
+                    total: 15,
+                    timeElapsed: 420, // 7 minutes
+                    correct: 5,
+                    incorrect: 2
+                });
+                const timerDuration = ref(900); // 15 minutes
+                const authStates = reactive({
+                    loading: false,
+                    error: "Authentication failed. Please try again."
+                });
+
+                const logEvent = (component, event, data = null) => {
+                    const timestamp = new Date().toLocaleTimeString();
+                    eventLog.value.unshift({ timestamp, component, event, data });
+                    if (eventLog.value.length > 50) {
+                        eventLog.value.pop();
+                    }
+                };
+
+                // Event handlers
+                const onAnswerSelected = (data) => logEvent('QuestionCard', 'answer-selected', data);
+                const onMilestoneReached = (milestone) => logEvent('StudyProgress', 'milestone-reached', milestone);
+                const onTimeUp = () => logEvent('ExamTimer', 'time-up');
+                const onWarning = (time) => logEvent('ExamTimer', 'warning', time);
+                const onCritical = (time) => logEvent('ExamTimer', 'critical', time);
+                const handleLogin = () => {
+                    logEvent('AuthButton', 'login');
+                    authStates.loading = true;
+                    setTimeout(() => {
+                        authStates.loading = false;
+                    }, 2000);
+                };
+                const handleLogout = () => logEvent('AuthButton', 'logout');
+                const handleProfile = () => logEvent('AuthButton', 'profile');
+                const handleSettings = () => logEvent('AuthButton', 'settings');
+                const clearError = () => {
+                    logEvent('AuthButton', 'error-cleared');
+                    authStates.error = null;
+                };
+
+                // Simulate progress updates
+                onMounted(() => {
+                    setInterval(() => {
+                        studyProgress.timeElapsed += 1;
+                    }, 1000);
+                });
+
+                return {
+                    eventLog,
+                    sampleQuestion,
+                    multipleSelectQuestion,
+                    studyProgress,
+                    timerDuration,
+                    authStates,
+                    mockUser,
+                    onAnswerSelected,
+                    onMilestoneReached,
+                    onTimeUp,
+                    onWarning,
+                    onCritical,
+                    handleLogin,
+                    handleLogout,
+                    handleProfile,
+                    handleSettings,
+                    clearError
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
