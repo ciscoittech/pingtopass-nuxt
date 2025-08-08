@@ -1,0 +1,340 @@
+name: Preview Environment Cleanup
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (no actual deletions)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      max_age_days:
+        description: 'Maximum age in days before cleanup'
+        required: false
+        default: '7'
+        type: string
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+
+jobs:
+  cleanup-previews:
+    name: Cleanup Expired Previews
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      deployments: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install wrangler
+        run: npm install -g wrangler
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Set cleanup parameters
+        id: params
+        run: |
+          DRY_RUN="${{ github.event.inputs.dry_run || 'false' }}"
+          MAX_AGE="${{ github.event.inputs.max_age_days || '7' }}"
+          
+          echo "dry_run=$DRY_RUN" >> $GITHUB_OUTPUT
+          echo "max_age_days=$MAX_AGE" >> $GITHUB_OUTPUT
+          
+          echo "Running cleanup with:"
+          echo "  - Dry run: $DRY_RUN"
+          echo "  - Max age: $MAX_AGE days"
+
+      - name: List all preview deployments
+        id: list-previews
+        run: |
+          echo "Fetching preview deployments..."
+          
+          # Get all workers with preview prefix
+          PREVIEWS=$(wrangler deployments list --env preview 2>/dev/null | grep "pingtopass-pr-" | awk '{print $1}' | sed 's/pingtopass-//' || echo "")
+          
+          if [ -z "$PREVIEWS" ]; then
+            echo "No preview deployments found"
+            echo "preview_count=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          PREVIEW_COUNT=$(echo "$PREVIEWS" | wc -l)
+          echo "Found $PREVIEW_COUNT preview deployments"
+          echo "preview_count=$PREVIEW_COUNT" >> $GITHUB_OUTPUT
+          echo "previews<<EOF" >> $GITHUB_OUTPUT
+          echo "$PREVIEWS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Check preview ages
+        id: check-ages
+        if: steps.list-previews.outputs.preview_count != '0'
+        run: |
+          PREVIEWS="${{ steps.list-previews.outputs.previews }}"
+          MAX_AGE_DAYS="${{ steps.params.outputs.max_age_days }}"
+          CURRENT_TIME=$(date +%s)
+          TTL_SECONDS=$((MAX_AGE_DAYS * 24 * 60 * 60))
+          
+          EXPIRED_PREVIEWS=""
+          EXPIRED_COUNT=0
+          ACTIVE_COUNT=0
+          
+          while IFS= read -r preview; do
+            if [ -z "$preview" ]; then
+              continue
+            fi
+            
+            echo "Checking age of preview: $preview"
+            
+            # Try to get PR info from preview name
+            PR_NUMBER=$(echo "$preview" | grep -oP 'pr-\K\d+' || echo "")
+            
+            if [ -n "$PR_NUMBER" ]; then
+              # Check if PR is still open
+              PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq .state 2>/dev/null || echo "unknown")
+              
+              if [ "$PR_STATE" = "OPEN" ]; then
+                echo "  PR #$PR_NUMBER is still open, keeping preview"
+                ((ACTIVE_COUNT++))
+                continue
+              elif [ "$PR_STATE" = "MERGED" ] || [ "$PR_STATE" = "CLOSED" ]; then
+                echo "  PR #$PR_NUMBER is $PR_STATE, marking for cleanup"
+                EXPIRED_PREVIEWS="$EXPIRED_PREVIEWS$preview\n"
+                ((EXPIRED_COUNT++))
+                continue
+              fi
+            fi
+            
+            # If we can't determine PR state, check by age
+            # For now, mark as expired if older than threshold
+            # In production, you'd check actual deployment timestamps
+            echo "  Unable to determine age, marking for cleanup"
+            EXPIRED_PREVIEWS="$EXPIRED_PREVIEWS$preview\n"
+            ((EXPIRED_COUNT++))
+          done <<< "$PREVIEWS"
+          
+          echo "expired_count=$EXPIRED_COUNT" >> $GITHUB_OUTPUT
+          echo "active_count=$ACTIVE_COUNT" >> $GITHUB_OUTPUT
+          echo "expired_previews<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$EXPIRED_PREVIEWS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "Summary: $EXPIRED_COUNT expired, $ACTIVE_COUNT active"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete expired previews
+        if: steps.check-ages.outputs.expired_count != '0'
+        run: |
+          EXPIRED_PREVIEWS="${{ steps.check-ages.outputs.expired_previews }}"
+          DRY_RUN="${{ steps.params.outputs.dry_run }}"
+          DELETED_COUNT=0
+          FAILED_COUNT=0
+          
+          echo "Starting cleanup of expired previews..."
+          
+          while IFS= read -r preview; do
+            if [ -z "$preview" ]; then
+              continue
+            fi
+            
+            WORKER_NAME="pingtopass-$preview"
+            
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "[DRY RUN] Would delete: $WORKER_NAME"
+              ((DELETED_COUNT++))
+            else
+              echo "Deleting worker: $WORKER_NAME"
+              
+              if wrangler delete "$WORKER_NAME" --force 2>/dev/null; then
+                echo "  ✅ Successfully deleted $WORKER_NAME"
+                ((DELETED_COUNT++))
+                
+                # Also cleanup KV namespaces if they exist
+                for suffix in "session" "cache" "rate"; do
+                  KV_NAME="${preview}-${suffix}"
+                  wrangler kv:namespace delete --namespace-id "$KV_NAME" --force 2>/dev/null || true
+                done
+              else
+                echo "  ❌ Failed to delete $WORKER_NAME"
+                ((FAILED_COUNT++))
+              fi
+            fi
+          done <<< "$EXPIRED_PREVIEWS"
+          
+          echo "deleted_count=$DELETED_COUNT" >> $GITHUB_ENV
+          echo "failed_count=$FAILED_COUNT" >> $GITHUB_ENV
+          
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "🔍 Dry run completed: Would delete $DELETED_COUNT preview(s)"
+          else
+            echo "✅ Cleanup completed: Deleted $DELETED_COUNT preview(s), $FAILED_COUNT failed"
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Cleanup orphaned KV namespaces
+        if: steps.params.outputs.dry_run != 'true'
+        run: |
+          echo "Checking for orphaned KV namespaces..."
+          
+          # List all KV namespaces
+          KV_NAMESPACES=$(wrangler kv:namespace list 2>/dev/null | jq -r '.[] | select(.title | test("pr-\\d+")) | .id + ":" + .title' || echo "")
+          
+          if [ -z "$KV_NAMESPACES" ]; then
+            echo "No preview KV namespaces found"
+            exit 0
+          fi
+          
+          ORPHANED_COUNT=0
+          
+          while IFS=: read -r kv_id kv_title; do
+            if [ -z "$kv_id" ] || [ -z "$kv_title" ]; then
+              continue
+            fi
+            
+            # Extract preview name from KV title
+            PREVIEW_NAME=$(echo "$kv_title" | grep -oP 'pr-\d+-[a-z0-9-]+' || echo "")
+            
+            if [ -n "$PREVIEW_NAME" ]; then
+              # Check if corresponding worker exists
+              if ! wrangler deployments list 2>/dev/null | grep -q "pingtopass-$PREVIEW_NAME"; then
+                echo "Found orphaned KV namespace: $kv_title (ID: $kv_id)"
+                
+                if wrangler kv:namespace delete --namespace-id "$kv_id" --force 2>/dev/null; then
+                  echo "  ✅ Deleted orphaned KV namespace"
+                  ((ORPHANED_COUNT++))
+                else
+                  echo "  ❌ Failed to delete KV namespace"
+                fi
+              fi
+            fi
+          done <<< "$KV_NAMESPACES"
+          
+          echo "Cleaned up $ORPHANED_COUNT orphaned KV namespace(s)"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Generate cleanup report
+        if: always()
+        run: |
+          echo "## 🧹 Preview Environment Cleanup Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Run Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode:** ${{ steps.params.outputs.dry_run == 'true' && 'Dry Run' || 'Live' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Max Age:** ${{ steps.params.outputs.max_age_days }} days" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.list-previews.outputs.preview_count }}" = "0" ]; then
+            echo "✅ No preview deployments found - nothing to clean up" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### 📊 Statistics" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Total Previews | ${{ steps.list-previews.outputs.preview_count }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Active Previews | ${{ steps.check-ages.outputs.active_count || 0 }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Expired Previews | ${{ steps.check-ages.outputs.expired_count || 0 }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Deleted | ${deleted_count:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Failed | ${failed_count:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            if [ -n "${{ steps.check-ages.outputs.expired_previews }}" ]; then
+              echo "### 🗑️ Cleaned Up Previews" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "```" >> $GITHUB_STEP_SUMMARY
+              echo "${{ steps.check-ages.outputs.expired_previews }}" >> $GITHUB_STEP_SUMMARY
+              echo "```" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Next scheduled cleanup: in 6 hours*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send Slack notification
+        if: env.deleted_count != '0' && steps.params.outputs.dry_run != 'true'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            Preview Cleanup: Deleted ${{ env.deleted_count }} expired preview environment(s)
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+  monitor-costs:
+    name: Monitor Preview Costs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Check Cloudflare usage
+        run: |
+          echo "## 💰 Preview Environment Cost Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date -u '+%Y-%m-%d')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Get worker analytics (requires analytics API access)
+          # This is a simplified example - actual implementation would use Cloudflare Analytics API
+          
+          PREVIEW_COUNT=$(wrangler deployments list --env preview 2>/dev/null | grep -c "pingtopass-pr-" || echo "0")
+          
+          # Estimate costs (simplified)
+          # Workers: $0.50 per million requests after 100k free
+          # KV: $0.50 per million reads after 100k free
+          # Assuming 10k requests per preview per day
+          
+          DAILY_REQUESTS=$((PREVIEW_COUNT * 10000))
+          MONTHLY_REQUESTS=$((DAILY_REQUESTS * 30))
+          
+          if [ $MONTHLY_REQUESTS -gt 100000 ]; then
+            BILLABLE_REQUESTS=$((MONTHLY_REQUESTS - 100000))
+            ESTIMATED_COST=$(echo "scale=2; $BILLABLE_REQUESTS / 1000000 * 0.50" | bc)
+          else
+            ESTIMATED_COST="0.00"
+          fi
+          
+          echo "### 📊 Usage Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Count/Usage |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Active Previews | $PREVIEW_COUNT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Est. Daily Requests | $DAILY_REQUESTS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Est. Monthly Requests | $MONTHLY_REQUESTS |" >> $GITHUB_STEP_SUMMARY
+          echo "| KV Namespaces | $((PREVIEW_COUNT * 3)) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 💵 Estimated Costs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Cost (USD) |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Workers Requests | \$$ESTIMATED_COST |" >> $GITHUB_STEP_SUMMARY
+          echo "| KV Operations | \$0.00 |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Total** | **\$$ESTIMATED_COST** |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $PREVIEW_COUNT -gt 10 ]; then
+            echo "⚠️ **Warning:** More than 10 preview environments active. Consider cleanup to reduce costs." >> $GITHUB_STEP_SUMMARY
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

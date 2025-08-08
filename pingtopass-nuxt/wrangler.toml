@@ -1,0 +1,288 @@
+# PingToPass Cloudflare Workers Configuration
+# Complete deployment configuration for all environments
+
+name = "pingtopass"
+main = ".output/server/index.mjs"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+# account_id = "YOUR_ACCOUNT_ID" # Set via environment or wrangler config
+
+# Build configuration
+[build]
+command = "pnpm build"
+watch_paths = ["server/**/*.ts", "app/**/*.vue", "pages/**/*.vue", "components/**/*.vue"]
+
+# KV Namespaces for session and cache storage
+[[kv_namespaces]]
+binding = "SESSION_STORE"
+id = "YOUR_SESSION_KV_ID" # Create with: wrangler kv:namespace create SESSION_STORE
+preview_id = "YOUR_PREVIEW_SESSION_KV_ID"
+
+[[kv_namespaces]]
+binding = "CACHE_STORE"
+id = "YOUR_CACHE_KV_ID" # Create with: wrangler kv:namespace create CACHE_STORE
+preview_id = "YOUR_PREVIEW_CACHE_KV_ID"
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "YOUR_RATE_LIMIT_KV_ID" # Create with: wrangler kv:namespace create RATE_LIMIT
+preview_id = "YOUR_PREVIEW_RATE_LIMIT_KV_ID"
+
+# Queue for async task processing
+[[queues.producers]]
+binding = "TASK_QUEUE"
+queue = "pingtopass-tasks"
+
+[[queues.consumers]]
+queue = "pingtopass-tasks"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "pingtopass-dlq"
+
+# R2 Storage for static assets and backups
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "pingtopass-assets"
+preview_bucket_name = "pingtopass-assets-preview"
+
+[[r2_buckets]]
+binding = "BACKUPS"
+bucket_name = "pingtopass-backups"
+
+# Cron triggers for scheduled jobs
+[triggers]
+crons = [
+    "0 * * * *",      # Hourly: Cache cleanup
+    "*/15 * * * *",   # Every 15 min: Health checks
+    "0 0 * * *",      # Daily: Metrics rollup
+    "0 2 * * 0"       # Weekly: Database optimization
+]
+
+# Analytics Engine for custom metrics
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+dataset = "pingtopass_analytics"
+
+# Base environment variables
+[vars]
+NODE_ENV = "production"
+LOG_LEVEL = "info"
+MAX_REQUEST_SIZE = "10485760" # 10MB
+ENABLE_METRICS = "true"
+CACHE_TTL = "300" # 5 minutes default cache
+API_VERSION = "v1"
+
+# Local development configuration
+[dev]
+port = 3000
+local_protocol = "http"
+upstream_protocol = "https"
+ip = "0.0.0.0"
+
+[dev.vars]
+ENVIRONMENT = "development"
+NUXT_PUBLIC_SITE_URL = "http://localhost:3000"
+LOG_LEVEL = "debug"
+
+# Development environment (wrangler dev)
+[env.development]
+name = "pingtopass-dev"
+workers_dev = true
+
+[env.development.vars]
+ENVIRONMENT = "development"
+NUXT_PUBLIC_SITE_URL = "http://localhost:3000"
+LOG_LEVEL = "debug"
+TURSO_ENV = "development"
+
+[[env.development.kv_namespaces]]
+binding = "SESSION_STORE"
+id = "DEV_SESSION_KV_ID"
+
+[[env.development.kv_namespaces]]
+binding = "CACHE_STORE"
+id = "DEV_CACHE_KV_ID"
+
+[[env.development.kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "DEV_RATE_LIMIT_KV_ID"
+
+# Preview environment (feature branches)
+[env.preview]
+name = "pingtopass-preview"
+
+[env.preview.vars]
+ENVIRONMENT = "preview"
+NUXT_PUBLIC_SITE_URL = "https://preview.pingtopass.com"
+LOG_LEVEL = "debug"
+TURSO_ENV = "development"
+# Preview-specific feature flags
+FEATURE_FLAGS_ENABLED = "true"
+DEBUG_MODE = "true"
+MOCK_DATA_ENABLED = "false"
+ANALYTICS_ENABLED = "false"
+# Preview limits to control costs
+MAX_REQUESTS_PER_MINUTE = "1000"
+MAX_CACHE_SIZE_MB = "50"
+PREVIEW_TTL_DAYS = "7"
+
+[[env.preview.routes]]
+pattern = "*.preview.pingtopass.com/*"
+zone_name = "pingtopass.com"
+
+# Dynamic KV namespaces - will be overridden per preview
+[[env.preview.kv_namespaces]]
+binding = "SESSION_STORE"
+id = "PREVIEW_SESSION_KV_ID"
+
+[[env.preview.kv_namespaces]]
+binding = "CACHE_STORE"
+id = "PREVIEW_CACHE_KV_ID"
+
+[[env.preview.kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "PREVIEW_RATE_LIMIT_KV_ID"
+
+# Shared R2 bucket for all previews (cost optimization)
+[[env.preview.r2_buckets]]
+binding = "ASSETS"
+bucket_name = "pingtopass-assets-preview"
+
+# Preview-specific queues with lower limits
+[[env.preview.queues.producers]]
+binding = "PREVIEW_QUEUE"
+queue = "pingtopass-preview-tasks"
+
+[[env.preview.queues.consumers]]
+queue = "pingtopass-preview-tasks"
+max_batch_size = 5
+max_batch_timeout = 60
+max_retries = 1
+
+# Staging environment (pre-production)
+[env.staging]
+name = "pingtopass-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+NUXT_PUBLIC_SITE_URL = "https://staging.pingtopass.com"
+LOG_LEVEL = "info"
+TURSO_ENV = "staging"
+
+[[env.staging.routes]]
+pattern = "staging.pingtopass.com/*"
+zone_name = "pingtopass.com"
+
+[[env.staging.kv_namespaces]]
+binding = "SESSION_STORE"
+id = "STAGING_SESSION_KV_ID"
+
+[[env.staging.kv_namespaces]]
+binding = "CACHE_STORE"
+id = "STAGING_CACHE_KV_ID"
+
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "STAGING_RATE_LIMIT_KV_ID"
+
+[[env.staging.r2_buckets]]
+binding = "ASSETS"
+bucket_name = "pingtopass-assets-staging"
+
+# Production environment
+[env.production]
+name = "pingtopass-production"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+NUXT_PUBLIC_SITE_URL = "https://pingtopass.com"
+LOG_LEVEL = "error"
+TURSO_ENV = "production"
+
+[[env.production.routes]]
+pattern = "pingtopass.com/*"
+zone_name = "pingtopass.com"
+
+[[env.production.routes]]
+pattern = "www.pingtopass.com/*"
+zone_name = "pingtopass.com"
+
+[[env.production.kv_namespaces]]
+binding = "SESSION_STORE"
+id = "PROD_SESSION_KV_ID"
+
+[[env.production.kv_namespaces]]
+binding = "CACHE_STORE"
+id = "PROD_CACHE_KV_ID"
+
+[[env.production.kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "PROD_RATE_LIMIT_KV_ID"
+
+[[env.production.r2_buckets]]
+binding = "ASSETS"
+bucket_name = "pingtopass-assets"
+
+[[env.production.r2_buckets]]
+binding = "BACKUPS"
+bucket_name = "pingtopass-backups"
+
+# Observability settings
+[observability]
+enabled = true
+head_sampling_rate = 1.0  # Sample 100% in dev/staging
+
+[env.production.observability]
+enabled = true
+head_sampling_rate = 0.1  # Sample 10% in production to reduce costs
+
+# Limits and performance settings
+[limits]
+cpu_ms = 50  # 50ms CPU time limit per request
+script_size = 10  # 10MB script size limit
+
+[placement]
+mode = "smart"  # Automatic placement for best performance
+
+# Service bindings for future microservices
+# [[services]]
+# binding = "AUTH_SERVICE"
+# service = "pingtopass-auth"
+# environment = "production"
+
+# Logpush configuration for advanced logging (requires Cloudflare Enterprise)
+# [logpush]
+# enabled = true
+# dataset = "workers_trace_events"
+# destination_conf = "s3://your-bucket/logs"
+# logpull_options = "fields=Event,EventTimestampMs,Outcome,ScriptName&timestamps=rfc3339"
+
+# Security headers and settings
+[env.production.vars]
+SECURITY_HEADERS_ENABLED = "true"
+CSP_ENABLED = "true"
+RATE_LIMIT_ENABLED = "true"
+MAX_REQUESTS_PER_MINUTE = "100"
+
+[env.staging.vars]
+SECURITY_HEADERS_ENABLED = "true"  
+CSP_ENABLED = "false" # Easier debugging in staging
+RATE_LIMIT_ENABLED = "true"
+MAX_REQUESTS_PER_MINUTE = "200"
+
+[env.preview.vars]
+SECURITY_HEADERS_ENABLED = "false"
+CSP_ENABLED = "false"
+RATE_LIMIT_ENABLED = "false"
+# Cost optimization for previews
+CACHE_AGGRESSIVE = "true"
+CACHE_TTL_PREVIEW = "3600"
+DATABASE_POOL_SIZE = "1"
+WORKER_TIMEOUT_MS = "10000"
+
+[env.development.vars]
+SECURITY_HEADERS_ENABLED = "false"
+CSP_ENABLED = "false"
+RATE_LIMIT_ENABLED = "false"

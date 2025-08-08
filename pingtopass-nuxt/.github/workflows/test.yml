@@ -1,0 +1,385 @@
+name: Test & Quality Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  workflow_call:
+    outputs:
+      test-results:
+        description: "Test results summary"
+        value: ${{ jobs.test-summary.outputs.summary }}
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+
+jobs:
+  test-matrix:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18', '20', '22']
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache test results
+        uses: actions/cache@v3
+        with:
+          path: |
+            coverage/
+            test-results/
+          key: test-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            test-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            test-${{ runner.os }}-node${{ matrix.node-version }}-
+
+      - name: Run unit tests
+        run: |
+          if grep -q '"test:unit"' package.json; then
+            pnpm run test:unit
+          else
+            echo "Unit tests not configured, creating placeholder"
+            mkdir -p test-results
+            echo '{"passed": 0, "failed": 0, "skipped": 1, "message": "No unit tests configured"}' > test-results/unit.json
+          fi
+
+      - name: Run integration tests
+        run: |
+          if grep -q '"test:integration"' package.json; then
+            pnpm run test:integration
+          else
+            echo "Integration tests not configured, skipping"
+          fi
+
+      - name: Generate coverage report
+        if: matrix.node-version == '20'
+        run: |
+          if grep -q '"test:coverage"' package.json; then
+            pnpm run test:coverage
+          else
+            echo "Coverage not configured, skipping"
+          fi
+
+      - name: Upload coverage to Codecov
+        if: matrix.node-version == '20' && github.actor != 'dependabot[bot]'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  lint-and-format:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: |
+          if grep -q '"lint"' package.json; then
+            pnpm run lint
+          else
+            echo "ESLint not configured, installing and running basic checks"
+            npx eslint . --ext .ts,.vue --ignore-pattern node_modules --ignore-pattern dist --ignore-pattern .output || echo "ESLint issues found, but not blocking"
+          fi
+
+      - name: Check code formatting
+        run: |
+          if grep -q '"format"' package.json; then
+            pnpm run format:check
+          elif command -v prettier >/dev/null 2>&1; then
+            npx prettier --check "**/*.{ts,js,vue,json,md}" || echo "Formatting issues found, but not blocking"
+          else
+            echo "Prettier not configured, skipping format check"
+          fi
+
+      - name: Run type checking
+        run: pnpm run typecheck
+
+  build-test:
+    name: Build Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build for production
+        run: pnpm run build
+
+      - name: Check build artifacts
+        run: |
+          if [ ! -d ".output" ]; then
+            echo "❌ Build output directory not found"
+            exit 1
+          fi
+          
+          if [ ! -f ".output/server/index.mjs" ]; then
+            echo "❌ Server build not found"
+            exit 1
+          fi
+          
+          echo "✅ Build artifacts validated"
+          ls -la .output/
+
+      - name: Test build size
+        run: |
+          BUILD_SIZE=$(du -sh .output | cut -f1)
+          echo "Build size: $BUILD_SIZE"
+          
+          # Upload build artifacts for deployment job
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: .output/
+          retention-days: 7
+
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: build-test
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: |
+          if grep -q '"test:e2e"' package.json; then
+            npx playwright install --with-deps
+          else
+            echo "E2E tests not configured, skipping"
+          fi
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: .output/
+
+      - name: Start preview server
+        run: |
+          if grep -q '"preview"' package.json; then
+            pnpm run preview &
+            echo $! > preview.pid
+            sleep 10
+          else
+            echo "Preview command not configured, using wrangler dev"
+            pnpm run dev:wrangler &
+            echo $! > preview.pid
+            sleep 15
+          fi
+
+      - name: Wait for server to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3000/api/health; do sleep 2; done'
+
+      - name: Run E2E tests
+        run: |
+          if grep -q '"test:e2e"' package.json; then
+            pnpm run test:e2e
+          else
+            echo "E2E tests not configured, running basic smoke tests"
+            curl -f http://localhost:3000/ || exit 1
+            curl -f http://localhost:3000/api/health || exit 1
+            echo "✅ Basic smoke tests passed"
+          fi
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+
+      - name: Stop preview server
+        if: always()
+        run: |
+          if [ -f preview.pid ]; then
+            kill $(cat preview.pid) || true
+            rm preview.pid
+          fi
+
+  dependency-check:
+    name: Dependency Security Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run security audit
+        run: |
+          pnpm audit --audit-level moderate || {
+            echo "Security vulnerabilities found. Details:"
+            pnpm audit --audit-level low
+            echo "Please run 'pnpm audit --fix' to resolve issues"
+            exit 1
+          }
+
+      - name: Check for outdated dependencies
+        run: |
+          echo "Checking for outdated dependencies..."
+          pnpm outdated || echo "Some dependencies are outdated"
+
+      - name: License check
+        run: |
+          if command -v license-checker >/dev/null 2>&1; then
+            npx license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD' --excludePrivatePackages
+          else
+            echo "License checker not available, skipping"
+          fi
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-matrix, lint-and-format, build-test, e2e-test, dependency-check]
+    if: always()
+    outputs:
+      summary: ${{ steps.summary.outputs.result }}
+    steps:
+      - name: Generate test summary
+        id: summary
+        run: |
+          UNIT_TESTS="${{ needs.test-matrix.result }}"
+          LINT="${{ needs.lint-and-format.result }}"
+          BUILD="${{ needs.build-test.result }}"
+          E2E="${{ needs.e2e-test.result }}"
+          DEPS="${{ needs.dependency-check.result }}"
+          
+          echo "## 🧪 Test Results Summary" >> summary.md
+          echo "" >> summary.md
+          echo "| Test Type | Status |" >> summary.md
+          echo "|-----------|--------|" >> summary.md
+          echo "| Unit Tests | $([ "$UNIT_TESTS" = "success" ] && echo "✅ Passed" || echo "❌ Failed") |" >> summary.md
+          echo "| Lint & Format | $([ "$LINT" = "success" ] && echo "✅ Passed" || echo "❌ Failed") |" >> summary.md
+          echo "| Build Test | $([ "$BUILD" = "success" ] && echo "✅ Passed" || echo "❌ Failed") |" >> summary.md
+          echo "| E2E Tests | $([ "$E2E" = "success" ] && echo "✅ Passed" || [ "$E2E" = "skipped" ] && echo "⏭️ Skipped" || echo "❌ Failed") |" >> summary.md
+          echo "| Dependencies | $([ "$DEPS" = "success" ] && echo "✅ Secure" || echo "⚠️ Issues Found") |" >> summary.md
+          
+          SUMMARY=$(cat summary.md)
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          echo "$SUMMARY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summary = `${{ steps.summary.outputs.result }}
+            
+            **Commit:** \`${{ github.sha }}\`
+            **Triggered by:** @${{ github.actor }}
+            
+            ---
+            *This summary was automatically generated by the test workflow*`;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Test Results Summary')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            }

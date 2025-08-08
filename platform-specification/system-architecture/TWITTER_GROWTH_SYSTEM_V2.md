@@ -9,7 +9,7 @@ Automated Twitter growth system for PingToPass using edge-native architecture wi
 - **Framework**: Nuxt 3 with Nitro server
 - **Database**: Turso (SQLite at edge)
 - **AI**: LangChain + OpenRouter (Qwen3 models)
-- **Deployment**: Cloudflare Pages/Workers
+- **Deployment**: Cloudflare Workers (unified platform)
 - **Queue**: Cloudflare Queues
 - **Storage**: Cloudflare R2 (if needed)
 
@@ -276,14 +276,19 @@ export default defineEventHandler(async (event) => {
 })
 ```
 
-## 4. Cloudflare Workers for Automation
+## 4. Integrated Twitter Automation (Within Nuxt Worker)
 
-### 4.1 Scheduled Tweet Analysis
+### 4.1 Scheduled Tweet Analysis (Cron Handler)
 ```typescript
-// workers/twitter-analyzer.ts
-export default {
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    // Runs every hour
+// server/api/_cron.ts
+export default defineEventHandler(async (event) => {
+  // Verify cron trigger from Cloudflare
+  const trigger = getHeader(event, 'x-cloudflare-cron')
+  if (!trigger) {
+    throw createError({ statusCode: 403, statusMessage: 'Unauthorized' })
+  }
+  
+  async function analyzeTwitterAccounts() {
     
     // Get accounts to analyze
     const accounts = await env.DB.prepare(`
@@ -320,11 +325,19 @@ export default {
 }
 ```
 
-### 4.2 Queue Processing
+### 4.2 Queue Processing (Queue Consumer)
 ```typescript
-// workers/twitter-queue-processor.ts
-export default {
-  async queue(batch: MessageBatch<TwitterTask>, env: Env) {
+// server/api/_queue.ts
+export default defineEventHandler(async (event) => {
+  // Handle queue messages from Cloudflare Queues
+  if (event.node.req.method !== 'POST') {
+    throw createError({ statusCode: 405 })
+  }
+  
+  const batch = await readBody(event)
+  const env = event.context.cloudflare?.env
+  
+  async function processQueue(batch: MessageBatch<TwitterTask>) {
     for (const message of batch.messages) {
       const task = message.body
       
@@ -510,27 +523,26 @@ export function selectOptimalModel(task: EngagementTask) {
 
 ## 8. Deployment Configuration
 
-### wrangler.toml
+### wrangler.toml (Main Configuration)
 ```toml
-name = "pingtopass-twitter"
+name = "pingtopass"
+main = ".output/server/index.mjs"
 compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
 
-[[ d1_databases ]]
-binding = "DB"
-database_name = "pingtopass-prod"
-database_id = "your-database-id"
-
-[[ queues.producers ]]
+# Queues for Twitter automation
+[[queues.producers]]
 queue = "twitter-tasks"
 binding = "TWITTER_QUEUE"
 
-[[ queues.consumers ]]
+[[queues.consumers]]
 queue = "twitter-tasks"
 max_batch_size = 10
 max_batch_timeout = 30
 
-[[triggers.cron]]
-crons = ["0 * * * *"] # Every hour
+# Cron triggers for scheduled tasks
+[triggers]
+crons = ["0 * * * *"]  # Every hour
 
 [vars]
 APP_URL = "https://pingtopass.com"
