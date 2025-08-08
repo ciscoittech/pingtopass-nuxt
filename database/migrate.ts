@@ -1,429 +1,279 @@
-#!/usr/bin/env tsx
-/**
- * Database Migration System for PingToPass
- * Supports up/down migrations with transaction safety
- * Environment-aware with dev/staging/prod separation
- */
+// Database migration script for PingToPass
+// Handles migration from raw SQL to Drizzle ORM with zero downtime
 
-import { config } from 'dotenv'
-import { readFileSync, readdirSync, statSync } from 'fs'
-import { join } from 'path'
+import { drizzle } from 'drizzle-orm/libsql'
+import { migrate } from 'drizzle-orm/libsql/migrator'
 import { createClient } from '@libsql/client'
-import { setDatabaseEnvironment, getDB } from '../server/utils/db'
+import { promises as fs } from 'fs'
+import { join } from 'path'
 
-// Load environment variables
-config()
-
-interface Migration {
-  id: string
-  timestamp: string
-  name: string
-  filename: string
-  up: string
-  down: string
-}
-
-interface MigrationRecord {
-  id: string
-  filename: string
-  applied_at: string
-  checksum: string
+interface MigrationConfig {
+  url: string
+  authToken: string
+  migrationsFolder: string
+  backupPath?: string
 }
 
 class DatabaseMigrator {
-  private db: any
-  private migrationsDir: string
+  private db: ReturnType<typeof drizzle>
+  private config: MigrationConfig
 
-  constructor(migrationsDir = './database/migrations') {
-    this.migrationsDir = migrationsDir
-  }
-
-  /**
-   * Initialize migrator with database connection
-   */
-  async initialize() {
-    this.db = getDB()
-    await this.ensureMigrationsTable()
-  }
-
-  /**
-   * Create migrations tracking table if it doesn't exist
-   */
-  private async ensureMigrationsTable() {
-    await this.db.execute(`
-      CREATE TABLE IF NOT EXISTS schema_migrations (
-        id TEXT PRIMARY KEY,
-        filename TEXT NOT NULL,
-        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        checksum TEXT NOT NULL
-      )
-    `)
+  constructor(config: MigrationConfig) {
+    this.config = config
     
-    console.log('📋 Schema migrations table ready')
+    const client = createClient({
+      url: config.url,
+      authToken: config.authToken
+    })
+    
+    this.db = drizzle(client)
   }
 
   /**
-   * Generate checksum for migration content
+   * Create a full database backup before migration
    */
-  private generateChecksum(content: string): string {
-    // Simple hash function for content verification
-    let hash = 0
-    for (let i = 0; i < content.length; i++) {
-      const char = content.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
-      hash = hash & hash // Convert to 32-bit integer
-    }
-    return hash.toString(36)
-  }
-
-  /**
-   * Load all migration files from directory
-   */
-  private loadMigrations(): Migration[] {
-    const migrations: Migration[] = []
+  async createBackup(): Promise<string> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const backupFile = `backup-${timestamp}.sql`
+    const backupPath = this.config.backupPath || './database/backups'
     
     try {
-      const files = readdirSync(this.migrationsDir)
-        .filter(file => file.endsWith('.sql'))
-        .sort()
-
-      for (const filename of files) {
-        const fullPath = join(this.migrationsDir, filename)
-        const content = readFileSync(fullPath, 'utf-8')
+      // Ensure backup directory exists
+      await fs.mkdir(backupPath, { recursive: true })
+      
+      // Get all table names
+      const tables = await this.db.all(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        ORDER BY name
+      `)
+      
+      let backupSql = '-- Database backup created at ' + new Date().toISOString() + '\n\n'
+      backupSql += 'PRAGMA foreign_keys = OFF;\n'
+      backupSql += 'BEGIN TRANSACTION;\n\n'
+      
+      for (const table of tables) {
+        const tableName = table.name
         
-        // Parse migration file
-        const sections = this.parseMigrationFile(content)
-        const match = filename.match(/^(\d{14})_(.+)\.sql$/)
+        // Get table schema
+        const schema = await this.db.get(`
+          SELECT sql FROM sqlite_master 
+          WHERE type='table' AND name = ?
+        `, [tableName])
         
-        if (!match) {
-          console.warn(`⚠️ Skipping invalid migration filename: ${filename}`)
-          continue
-        }
-
-        migrations.push({
-          id: match[1],
-          timestamp: match[1],
-          name: match[2],
-          filename,
-          up: sections.up,
-          down: sections.down
-        })
-      }
-    } catch (error) {
-      console.error('❌ Error loading migrations:', error.message)
-      process.exit(1)
-    }
-
-    return migrations
-  }
-
-  /**
-   * Parse migration file into up/down sections
-   */
-  private parseMigrationFile(content: string): { up: string; down: string } {
-    const upMarker = '-- +migrate Up'
-    const downMarker = '-- +migrate Down'
-    
-    const upIndex = content.indexOf(upMarker)
-    const downIndex = content.indexOf(downMarker)
-    
-    if (upIndex === -1) {
-      // No markers, assume entire file is up migration
-      return { up: content.trim(), down: '' }
-    }
-    
-    const up = content
-      .substring(upIndex + upMarker.length, downIndex === -1 ? undefined : downIndex)
-      .trim()
-    
-    const down = downIndex === -1 ? '' : content
-      .substring(downIndex + downMarker.length)
-      .trim()
-    
-    return { up, down }
-  }
-
-  /**
-   * Get applied migrations from database
-   */
-  private async getAppliedMigrations(): Promise<MigrationRecord[]> {
-    const result = await this.db.execute('SELECT * FROM schema_migrations ORDER BY id')
-    return result.rows as MigrationRecord[]
-  }
-
-  /**
-   * Execute SQL statements with transaction support
-   */
-  private async executeWithTransaction(statements: string[]): Promise<void> {
-    // For Turso/libSQL, execute statements without manual transaction management
-    // The migration system provides rollback at the migration level
-    try {
-      for (const statement of statements) {
-        if (statement.trim()) {
-          console.log(`  📝 Executing: ${statement.substring(0, 60)}...`)
-          await this.db.execute(statement)
+        backupSql += `${schema?.sql};\n\n`
+        
+        // Get table data
+        const rows = await this.db.all(`SELECT * FROM ${tableName}`)
+        
+        if (rows.length > 0) {
+          const columns = Object.keys(rows[0])
+          const columnList = columns.join(', ')
+          
+          for (const row of rows) {
+            const values = columns.map(col => {
+              const value = row[col]
+              if (value === null) return 'NULL'
+              if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`
+              return String(value)
+            }).join(', ')
+            
+            backupSql += `INSERT INTO ${tableName} (${columnList}) VALUES (${values});\n`
+          }
+          backupSql += '\n'
         }
       }
+      
+      backupSql += 'COMMIT;\n'
+      backupSql += 'PRAGMA foreign_keys = ON;\n'
+      
+      const fullBackupPath = join(backupPath, backupFile)
+      await fs.writeFile(fullBackupPath, backupSql, 'utf-8')
+      
+      console.log(`✅ Database backup created: ${fullBackupPath}`)
+      return fullBackupPath
     } catch (error) {
-      console.error(`❌ Failed to execute statement: ${error.message}`)
+      console.error('❌ Failed to create backup:', error)
       throw error
     }
   }
 
   /**
-   * Parse SQL content into statements properly handling multi-line statements
+   * Validate current database state
    */
-  private parseStatements(content: string): string[] {
-    const allStatements = []
-    let currentStatement = ''
-    let inCreateTable = false
-    
-    const lines = content.split('\n')
-    
-    for (const line of lines) {
-      const trimmedLine = line.trim()
+  async validateDatabase(): Promise<boolean> {
+    try {
+      // Check if critical tables exist
+      const criticalTables = ['users', 'exams', 'questions', 'study_sessions']
       
-      // Skip comments and empty lines
-      if (!trimmedLine || trimmedLine.startsWith('--')) {
-        continue
-      }
-      
-      // Track if we're inside a CREATE TABLE block
-      if (trimmedLine.toUpperCase().startsWith('CREATE TABLE')) {
-        inCreateTable = true
-        currentStatement = trimmedLine
-      } else if (inCreateTable) {
-        currentStatement += ' ' + trimmedLine
+      for (const tableName of criticalTables) {
+        const table = await this.db.get(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name = ?
+        `, [tableName])
         
-        // Check if this line ends the CREATE TABLE (ends with ');' or just ';')
-        if (trimmedLine.endsWith(');') || trimmedLine === ');') {
-          allStatements.push(currentStatement.trim())
-          currentStatement = ''
-          inCreateTable = false
-        }
-      } else {
-        // Regular single-line statements (like indexes)
-        if (trimmedLine.endsWith(';')) {
-          const statement = (currentStatement + ' ' + trimmedLine).trim()
-          if (statement && statement !== 'PRAGMA foreign_keys = ON;') {
-            allStatements.push(statement)
-          }
-          currentStatement = ''
-        } else {
-          currentStatement += (currentStatement ? ' ' : '') + trimmedLine
+        if (!table) {
+          console.warn(`⚠️  Critical table missing: ${tableName}`)
+          return false
         }
       }
+      
+      // Check data integrity
+      const userCount = await this.db.get('SELECT COUNT(*) as count FROM users')
+      const questionCount = await this.db.get('SELECT COUNT(*) as count FROM questions')
+      
+      console.log(`📊 Database validation:`)
+      console.log(`   Users: ${userCount?.count}`)
+      console.log(`   Questions: ${questionCount?.count}`)
+      
+      return true
+    } catch (error) {
+      console.error('❌ Database validation failed:', error)
+      return false
     }
-    
-    // Add any remaining statement
-    if (currentStatement.trim()) {
-      allStatements.push(currentStatement.trim())
-    }
-    
-    return allStatements
   }
 
   /**
-   * Apply a single migration
+   * Run Drizzle migrations
    */
-  private async applyMigration(migration: Migration): Promise<void> {
-    console.log(`🔼 Applying migration: ${migration.filename}`)
-    
-    const statements = this.parseStatements(migration.up)
-    console.log(`📝 Parsed ${statements.length} SQL statements`)
-
-    await this.executeWithTransaction(statements)
-
-    // Record migration as applied
-    const checksum = this.generateChecksum(migration.up)
-    await this.db.execute({
-      sql: `INSERT INTO schema_migrations (id, filename, checksum) VALUES (?, ?, ?)`,
-      args: [migration.id, migration.filename, checksum]
-    })
-
-    console.log(`✅ Applied: ${migration.filename}`)
-  }
-
-  /**
-   * Rollback a single migration
-   */
-  private async rollbackMigration(migration: Migration): Promise<void> {
-    if (!migration.down) {
-      throw new Error(`No down migration available for ${migration.filename}`)
+  async runMigrations(): Promise<void> {
+    try {
+      console.log('🚀 Starting database migration...')
+      
+      await migrate(this.db, {
+        migrationsFolder: this.config.migrationsFolder
+      })
+      
+      console.log('✅ Migrations completed successfully!')
+    } catch (error) {
+      console.error('❌ Migration failed:', error)
+      throw error
     }
-
-    console.log(`🔽 Rolling back migration: ${migration.filename}`)
-
-    const statements = this.parseStatements(migration.down)
-    console.log(`📝 Parsed ${statements.length} rollback SQL statements`)
-
-    await this.executeWithTransaction(statements)
-
-    // Remove migration record
-    await this.db.execute({
-      sql: `DELETE FROM schema_migrations WHERE id = ?`,
-      args: [migration.id]
-    })
-
-    console.log(`✅ Rolled back: ${migration.filename}`)
   }
 
   /**
-   * Run pending migrations
+   * Verify migration success
+   */
+  async verifyMigration(): Promise<boolean> {
+    try {
+      // Check if all expected tables exist with correct schema
+      const expectedTables = [
+        'users', 'exams', 'objectives', 'questions',
+        'study_sessions', 'test_attempts', 'user_answers', 'user_progress',
+        'twitter_accounts', 'tweets', 'engagement_opportunities',
+        'growth_metrics', 'voice_profiles',
+        'ai_generation_log', 'audit_log'
+      ]
+      
+      for (const tableName of expectedTables) {
+        const table = await this.db.get(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name = ?
+        `, [tableName])
+        
+        if (!table) {
+          console.error(`❌ Expected table missing after migration: ${tableName}`)
+          return false
+        }
+      }
+      
+      // Test basic operations
+      await this.db.get('SELECT 1 FROM users LIMIT 1')
+      await this.db.get('SELECT 1 FROM questions LIMIT 1')
+      
+      console.log('✅ Migration verification successful!')
+      return true
+    } catch (error) {
+      console.error('❌ Migration verification failed:', error)
+      return false
+    }
+  }
+
+  /**
+   * Complete migration process with safety checks
    */
   async migrate(): Promise<void> {
-    console.log('🚀 Starting database migration...')
-    
-    const allMigrations = this.loadMigrations()
-    const appliedMigrations = await this.getAppliedMigrations()
-    const appliedIds = new Set(appliedMigrations.map(m => m.id))
-
-    const pendingMigrations = allMigrations.filter(m => !appliedIds.has(m.id))
-
-    if (pendingMigrations.length === 0) {
-      console.log('✨ Database is up to date')
-      return
-    }
-
-    console.log(`📦 Found ${pendingMigrations.length} pending migrations`)
-
-    for (const migration of pendingMigrations) {
-      await this.applyMigration(migration)
-    }
-
-    console.log('🎉 Migration completed successfully!')
-  }
-
-  /**
-   * Rollback migrations
-   */
-  async rollback(steps = 1): Promise<void> {
-    console.log(`🔄 Rolling back ${steps} migration(s)...`)
-    
-    const allMigrations = this.loadMigrations()
-    const appliedMigrations = await this.getAppliedMigrations()
-    
-    // Sort by timestamp descending for rollback
-    appliedMigrations.sort((a, b) => b.id.localeCompare(a.id))
-    
-    const migrationsToRollback = appliedMigrations.slice(0, steps)
-    
-    for (const appliedMigration of migrationsToRollback) {
-      const migration = allMigrations.find(m => m.id === appliedMigration.id)
-      if (!migration) {
-        throw new Error(`Migration file not found for ${appliedMigration.filename}`)
+    try {
+      console.log('🔄 Starting database migration process...\n')
+      
+      // Step 1: Validate current database
+      console.log('1️⃣  Validating current database state...')
+      const isValid = await this.validateDatabase()
+      if (!isValid) {
+        throw new Error('Database validation failed. Please check your database state.')
       }
       
-      await this.rollbackMigration(migration)
+      // Step 2: Create backup
+      console.log('\n2️⃣  Creating database backup...')
+      const backupPath = await this.createBackup()
+      
+      // Step 3: Run migrations
+      console.log('\n3️⃣  Running Drizzle migrations...')
+      await this.runMigrations()
+      
+      // Step 4: Verify migration
+      console.log('\n4️⃣  Verifying migration...')
+      const isSuccess = await this.verifyMigration()
+      if (!isSuccess) {
+        throw new Error('Migration verification failed')
+      }
+      
+      console.log('\n🎉 Database migration completed successfully!')
+      console.log(`📁 Backup saved to: ${backupPath}`)
+      
+    } catch (error) {
+      console.error('\n❌ Migration process failed:', error)
+      console.log('\n🔄 To restore from backup, run:')
+      console.log('   turso db shell your-db < path/to/backup.sql')
+      throw error
     }
-
-    console.log('🎉 Rollback completed successfully!')
-  }
-
-  /**
-   * Show migration status
-   */
-  async status(): Promise<void> {
-    const allMigrations = this.loadMigrations()
-    const appliedMigrations = await this.getAppliedMigrations()
-    const appliedIds = new Set(appliedMigrations.map(m => m.id))
-
-    console.log('\n📊 Migration Status:')
-    console.log('====================')
-
-    for (const migration of allMigrations) {
-      const status = appliedIds.has(migration.id) ? '✅ Applied' : '⏳ Pending'
-      const appliedAt = appliedMigrations.find(m => m.id === migration.id)?.applied_at || ''
-      console.log(`${status} ${migration.filename} ${appliedAt}`)
-    }
-
-    const pendingCount = allMigrations.length - appliedIds.size
-    console.log(`\n📈 Total: ${allMigrations.length}, Applied: ${appliedIds.size}, Pending: ${pendingCount}`)
-  }
-
-  /**
-   * Reset database (rollback all migrations)
-   */
-  async reset(): Promise<void> {
-    console.log('🔄 Resetting database (rolling back all migrations)...')
-    
-    const appliedMigrations = await this.getAppliedMigrations()
-    await this.rollback(appliedMigrations.length)
-    
-    console.log('🎉 Database reset completed!')
   }
 }
 
-/**
- * CLI interface
- */
-async function main() {
-  const args = process.argv.slice(2)
-  const command = args[0] || 'migrate'
+// Migration script execution
+async function runMigration() {
+  const environment = process.env.NODE_ENV || 'development'
+  const isDev = environment === 'development'
   
-  // Set database environment from environment variable or default to development
-  const env = (process.env.DATABASE_ENV || process.env.NODE_ENV || 'development') as any
-  console.log(`🌍 Database environment: ${env}`)
+  // Determine database URL based on environment
+  const databaseUrl = isDev 
+    ? process.env.TURSO_DATABASE_URL_DEV || process.env.TURSO_DATABASE_URL
+    : process.env.TURSO_DATABASE_URL_PROD || process.env.TURSO_DATABASE_URL
   
-  if (env === 'test') {
-    setDatabaseEnvironment('test')
-  } else if (env === 'production') {
-    setDatabaseEnvironment('production')
-  } else if (env === 'staging') {
-    setDatabaseEnvironment('staging')
-  } else {
-    setDatabaseEnvironment('development')
+  const authToken = process.env.TURSO_AUTH_TOKEN
+  
+  if (!databaseUrl || !authToken) {
+    console.error('❌ Missing required environment variables:')
+    console.error('   TURSO_DATABASE_URL (or TURSO_DATABASE_URL_DEV/PROD)')
+    console.error('   TURSO_AUTH_TOKEN')
+    process.exit(1)
   }
-
-  const migrator = new DatabaseMigrator()
-  await migrator.initialize()
-
+  
+  const migrator = new DatabaseMigrator({
+    url: databaseUrl,
+    authToken,
+    migrationsFolder: './database/migrations',
+    backupPath: './database/backups'
+  })
+  
   try {
-    switch (command) {
-      case 'migrate':
-      case 'up':
-        await migrator.migrate()
-        break
-        
-      case 'rollback':
-      case 'down':
-        const steps = parseInt(args[1]) || 1
-        await migrator.rollback(steps)
-        break
-        
-      case 'status':
-        await migrator.status()
-        break
-        
-      case 'reset':
-        await migrator.reset()
-        break
-        
-      default:
-        console.log('Usage: tsx database/migrate.ts [command] [options]')
-        console.log('')
-        console.log('Commands:')
-        console.log('  migrate, up     Apply pending migrations')
-        console.log('  rollback, down  Rollback migrations (default: 1)')
-        console.log('  status          Show migration status')
-        console.log('  reset           Rollback all migrations')
-        console.log('')
-        console.log('Environment variables:')
-        console.log('  DATABASE_ENV=development|staging|production')
-        process.exit(1)
-    }
+    await migrator.migrate()
+    console.log('\n✨ Ready to use Drizzle ORM!')
+    console.log('\n📚 Next steps:')
+    console.log('   1. Update your API routes to use Drizzle queries')
+    console.log('   2. Run tests to ensure everything works')
+    console.log('   3. Deploy to production')
+    
   } catch (error) {
-    console.error('❌ Migration failed:', error.message)
-    if (process.env.DEBUG) {
-      console.error(error.stack)
-    }
+    console.error('\n💥 Migration failed. Please check the error above.')
     process.exit(1)
   }
 }
 
-// Run if called directly
+// Run migration if this file is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main()
+  runMigration()
 }
 
 export { DatabaseMigrator }
+export default runMigration

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Claude launcher for foundation worktree
+# Claude launcher for database-layer worktree
 # This script starts Claude with the correct prompt
 
 clear
 echo -e "\033[0;36m═══════════════════════════════════════════════════════════\033[0m"
-echo -e "\033[0;36m  🚀 Starting Claude for: foundation\033[0m"
+echo -e "\033[0;36m  🚀 Starting Claude for: database-layer\033[0m"
 echo -e "\033[0;36m═══════════════════════════════════════════════════════════\033[0m"
 echo ""
 echo -e "\033[1;33mWorkflow Pattern:\033[0m"
@@ -20,7 +20,7 @@ echo -e "\033[0;32mWhen Claude starts, paste it to begin work.\033[0m"
 echo ""
 
 # Copy prompt to clipboard
-cat "/tmp/foundation_prompt.txt" | pbcopy
+cat "/tmp/database-layer_prompt.txt" | pbcopy
 
 echo -e "\033[0;36mStarting Claude in 3 seconds...\033[0m"
 sleep 3
