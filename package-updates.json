@@ -1,0 +1,30 @@
+{
+  "name": "drizzle-migration-dependencies",
+  "description": "Additional dependencies needed for Drizzle ORM migration",
+  "dependencies": {
+    "drizzle-orm": "^0.29.3",
+    "@libsql/client": "^0.5.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.20.9",
+    "@types/better-sqlite3": "^7.6.8"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate:sqlite",
+    "db:migrate": "tsx database/migrate.ts",
+    "db:migrate:dev": "TURSO_DATABASE_URL=$TURSO_DATABASE_URL_DEV tsx database/migrate.ts",
+    "db:migrate:prod": "TURSO_DATABASE_URL=$TURSO_DATABASE_URL_PROD tsx database/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "db:push": "drizzle-kit push:sqlite",
+    "db:introspect": "drizzle-kit introspect:sqlite"
+  },
+  "updateInstructions": [
+    "1. Run: npm install drizzle-orm @libsql/client zod",
+    "2. Run: npm install -D drizzle-kit @types/better-sqlite3",
+    "3. Add the new scripts to your package.json",
+    "4. Update nuxt.config.ts build.transpile array to include 'drizzle-orm'",
+    "5. Create .env variables: TURSO_DATABASE_URL, TURSO_AUTH_TOKEN",
+    "6. Run migration: npm run db:migrate"
+  ]
+}
