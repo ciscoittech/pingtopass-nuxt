@@ -1,12 +1,13 @@
 // Database connectivity health check endpoint
-import { db } from '~/server/utils/database'
+import { getDB, sql } from '../../utils/database'
 
 export default defineEventHandler(async (event) => {
   const startTime = Date.now()
   
   try {
     // Test database connectivity
-    const result = await db.execute('SELECT 1 as test')
+    const db = getDB()
+    const result = await db.run(sql`SELECT 1 as test`)
     const responseTime = Date.now() - startTime
     
     if (result.rows && result.rows.length > 0) {

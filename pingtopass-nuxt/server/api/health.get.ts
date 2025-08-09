@@ -4,6 +4,7 @@ export default defineEventHandler(async (event) => {
   
   try {
     // Basic health information
+    const responseTime = Date.now() - startTime
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -12,6 +13,7 @@ export default defineEventHandler(async (event) => {
       version: '1.0.0',
       checks: {
         server: 'ok',
+        responseTime: `${responseTime}ms`,
         memory: {
           used: process.memoryUsage().heapUsed,
           total: process.memoryUsage().heapTotal,
@@ -19,9 +21,6 @@ export default defineEventHandler(async (event) => {
         }
       }
     }
-    
-    const responseTime = Date.now() - startTime
-    health.checks.responseTime = `${responseTime}ms`
     
     // Set cache headers
     setHeader(event, 'Cache-Control', 'no-cache, no-store, must-revalidate')

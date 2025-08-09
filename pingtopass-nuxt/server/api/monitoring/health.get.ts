@@ -2,9 +2,9 @@
  * Health check endpoint with detailed system status
  */
 
-import { getSystemHealth } from '~/server/middleware/performance-monitor';
-import { getErrorSummary } from '~/server/middleware/error-handler';
-import { db } from '~/server/utils/database';
+import { getSystemHealth } from '../../middleware/performance-monitor';
+import { getErrorSummary } from '../../middleware/error-handler';
+import { getDB, sql } from '../../utils/database';
 
 export default defineEventHandler(async (event) => {
   const startTime = Date.now();
@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
     // Database connectivity check
     try {
       const dbStart = Date.now();
-      await db.execute('SELECT 1');
+      const db = getDB();
+      await db.run(sql`SELECT 1`);
       checks.database = {
         status: 'healthy',
         responseTime: Date.now() - dbStart,

@@ -57,9 +57,9 @@ export function getPreviewConfig(event: H3Event): PreviewConfig {
   const isPreview = env.ENVIRONMENT === 'preview' || env.PREVIEW_MODE === 'true';
   
   // Get preview-specific environment variables
-  const prNumber = env.PREVIEW_PR_NUMBER || '';
-  const branchName = env.PREVIEW_BRANCH_NAME || '';
-  const createdAt = env.PREVIEW_CREATED_AT || '';
+  const prNumber = (env.PREVIEW_PR_NUMBER as string) || '';
+  const branchName = (env.PREVIEW_BRANCH_NAME as string) || '';
+  const createdAt = (env.PREVIEW_CREATED_AT as string) || '';
   
   // Check for feature flag overrides in query params (for testing)
   const query = getQuery(event);

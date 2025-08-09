@@ -4,7 +4,7 @@
  */
 
 import type { H3Event, H3Error } from 'h3';
-import { logger, Logger, LogLevel } from '~/server/utils/logger';
+import { logger, Logger, LogLevel } from '../utils/logger';
 
 export interface ErrorMetrics {
   errorCount: number;

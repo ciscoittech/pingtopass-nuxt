@@ -2,8 +2,8 @@
  * API endpoint to expose performance metrics
  */
 
-import { getPerformanceMetrics, getRequestSummary, getDatabaseSummary, getSystemHealth } from '~/server/middleware/performance-monitor';
-import { getErrorMetrics, getErrorSummary } from '~/server/middleware/error-handler';
+import { getPerformanceMetrics, getRequestSummary, getDatabaseSummary, getSystemHealth } from '../../middleware/performance-monitor';
+import { getErrorMetrics, getErrorSummary } from '../../middleware/error-handler';
 
 export default defineEventHandler(async (event) => {
   try {

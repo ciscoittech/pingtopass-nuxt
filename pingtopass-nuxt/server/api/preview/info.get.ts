@@ -4,7 +4,7 @@
  * Only available in preview mode
  */
 
-import { getPreviewConfig, createPreviewResponse } from '~/server/utils/preview-config';
+import { getPreviewConfig, createPreviewResponse } from '../../utils/preview-config';
 
 export default defineEventHandler(async (event) => {
   const config = getPreviewConfig(event);
@@ -25,12 +25,12 @@ export default defineEventHandler(async (event) => {
     branchName: config.branchName,
     createdAt: config.createdAt,
     url: env.NUXT_PUBLIC_SITE_URL,
-    ttlDays: env.PREVIEW_TTL_DAYS || '7'
+    ttlDays: (env.PREVIEW_TTL_DAYS as string) || '7'
   };
   
   // Calculate expiration
   const createdDate = config.createdAt ? new Date(config.createdAt) : new Date();
-  const ttlDays = parseInt(env.PREVIEW_TTL_DAYS || '7');
+  const ttlDays = parseInt((env.PREVIEW_TTL_DAYS as string) || '7');
   const expirationDate = new Date(createdDate);
   expirationDate.setDate(expirationDate.getDate() + ttlDays);
   

@@ -4,7 +4,7 @@
  */
 
 import type { H3Event } from 'h3';
-import { logger, Logger, PerformanceTimer, getMemoryUsage } from '~/server/utils/logger';
+import { logger, Logger, PerformanceTimer, getMemoryUsage } from '../utils/logger';
 
 export interface RequestMetrics {
   totalRequests: number;

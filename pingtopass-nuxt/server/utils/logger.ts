@@ -52,7 +52,7 @@ export interface LogEntry {
   metadata?: Record<string, any>;
 }
 
-class Logger {
+export class Logger {
   private defaultContext: LogContext = {};
   private isProduction = process.env.NODE_ENV === 'production';
 
@@ -87,7 +87,7 @@ class Logger {
       path: url.pathname,
       method: event.node.req.method,
       userAgent: headers['user-agent'],
-      ip: getClientIP(event),
+      ip: headers['x-forwarded-for'] || headers['cf-connecting-ip'] || event.node.req.socket.remoteAddress || 'unknown',
       country: headers['cf-ipcountry'],
       region: headers['cf-region'],
     };
