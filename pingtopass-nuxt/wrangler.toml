@@ -2,7 +2,7 @@
 # Complete deployment configuration for all environments
 
 name = "pingtopass"
-main = ".output/server/index.mjs"
+main = ".output/server/index.js"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = false
@@ -85,6 +85,9 @@ ip = "0.0.0.0"
 ENVIRONMENT = "development"
 NUXT_PUBLIC_SITE_URL = "http://localhost:3000"
 LOG_LEVEL = "debug"
+SECURITY_HEADERS_ENABLED = "false"
+CSP_ENABLED = "false"
+RATE_LIMIT_ENABLED = "false"
 
 # Development environment (wrangler dev)
 [env.development]
@@ -96,6 +99,9 @@ ENVIRONMENT = "development"
 NUXT_PUBLIC_SITE_URL = "http://localhost:3000"
 LOG_LEVEL = "debug"
 TURSO_ENV = "development"
+SECURITY_HEADERS_ENABLED = "false"
+CSP_ENABLED = "false"
+RATE_LIMIT_ENABLED = "false"
 
 [[env.development.kv_namespaces]]
 binding = "SESSION_STORE"
@@ -127,6 +133,15 @@ ANALYTICS_ENABLED = "false"
 MAX_REQUESTS_PER_MINUTE = "1000"
 MAX_CACHE_SIZE_MB = "50"
 PREVIEW_TTL_DAYS = "7"
+# Security settings
+SECURITY_HEADERS_ENABLED = "false"
+CSP_ENABLED = "false"
+RATE_LIMIT_ENABLED = "false"
+# Cost optimization for previews
+CACHE_AGGRESSIVE = "true"
+CACHE_TTL_PREVIEW = "3600"
+DATABASE_POOL_SIZE = "1"
+WORKER_TIMEOUT_MS = "10000"
 
 [[env.preview.routes]]
 pattern = "*.preview.pingtopass.com/*"
@@ -170,6 +185,10 @@ ENVIRONMENT = "staging"
 NUXT_PUBLIC_SITE_URL = "https://staging.pingtopass.com"
 LOG_LEVEL = "info"
 TURSO_ENV = "staging"
+SECURITY_HEADERS_ENABLED = "true"  
+CSP_ENABLED = "false"
+RATE_LIMIT_ENABLED = "true"
+MAX_REQUESTS_PER_MINUTE = "200"
 
 [[env.staging.routes]]
 pattern = "staging.pingtopass.com/*"
@@ -200,6 +219,10 @@ ENVIRONMENT = "production"
 NUXT_PUBLIC_SITE_URL = "https://pingtopass.com"
 LOG_LEVEL = "error"
 TURSO_ENV = "production"
+SECURITY_HEADERS_ENABLED = "true"
+CSP_ENABLED = "true"
+RATE_LIMIT_ENABLED = "true"
+MAX_REQUESTS_PER_MINUTE = "100"
 
 [[env.production.routes]]
 pattern = "pingtopass.com/*"
@@ -259,30 +282,4 @@ mode = "smart"  # Automatic placement for best performance
 # destination_conf = "s3://your-bucket/logs"
 # logpull_options = "fields=Event,EventTimestampMs,Outcome,ScriptName&timestamps=rfc3339"
 
-# Security headers and settings
-[env.production.vars]
-SECURITY_HEADERS_ENABLED = "true"
-CSP_ENABLED = "true"
-RATE_LIMIT_ENABLED = "true"
-MAX_REQUESTS_PER_MINUTE = "100"
-
-[env.staging.vars]
-SECURITY_HEADERS_ENABLED = "true"  
-CSP_ENABLED = "false" # Easier debugging in staging
-RATE_LIMIT_ENABLED = "true"
-MAX_REQUESTS_PER_MINUTE = "200"
-
-[env.preview.vars]
-SECURITY_HEADERS_ENABLED = "false"
-CSP_ENABLED = "false"
-RATE_LIMIT_ENABLED = "false"
-# Cost optimization for previews
-CACHE_AGGRESSIVE = "true"
-CACHE_TTL_PREVIEW = "3600"
-DATABASE_POOL_SIZE = "1"
-WORKER_TIMEOUT_MS = "10000"
-
-[env.development.vars]
-SECURITY_HEADERS_ENABLED = "false"
-CSP_ENABLED = "false"
-RATE_LIMIT_ENABLED = "false"
+# Security headers and settings - merged with existing vars sections above

@@ -27,3 +27,22 @@ logs
 drizzle/
 *.db
 *.sqlite
+
+# Screenshots and temporary files
+screenshots*/
+dashboard-*.png
+*.png
+
+# Development scripts
+fix-*.sh
+monitor-*.sh
+deploy-*.sh
+run-*.sh
+
+# Parent directory artifacts (should not be in this repo)
+../claude-code-templates/
+../cloudflare-workers-sdk-temp/
+../pingtopass-worktrees/
+
+# Worktree documentation (temporary)
+WORKTREE_*.md
