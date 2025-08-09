@@ -1,0 +1,130 @@
+/* Spike Theme Typography Tokens */
+
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Font Families */
+  --spike-font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --spike-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  
+  /* Font Weights */
+  --spike-font-weight-light: 300;
+  --spike-font-weight-regular: 400;
+  --spike-font-weight-medium: 500;
+  --spike-font-weight-semibold: 600;
+  --spike-font-weight-bold: 700;
+  
+  /* Font Sizes - Fluid typography scale */
+  --spike-font-size-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);    /* 12-14px */
+  --spike-font-size-sm: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);      /* 14-16px */
+  --spike-font-size-base: clamp(1rem, 0.9rem + 0.5vw, 1.125rem);      /* 16-18px */
+  --spike-font-size-md: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);      /* 16-18px */
+  --spike-font-size-lg: clamp(1.125rem, 1rem + 0.625vw, 1.25rem);     /* 18-20px */
+  --spike-font-size-xl: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);      /* 20-24px */
+  --spike-font-size-2xl: clamp(1.5rem, 1.3rem + 1vw, 1.875rem);       /* 24-30px */
+  --spike-font-size-3xl: clamp(1.875rem, 1.6rem + 1.375vw, 2.25rem);  /* 30-36px */
+  --spike-font-size-4xl: clamp(2.25rem, 1.9rem + 1.75vw, 3rem);       /* 36-48px */
+  --spike-font-size-5xl: clamp(3rem, 2.4rem + 3vw, 4rem);             /* 48-64px */
+  
+  /* Line Heights - Optimized for readability */
+  --spike-line-height-tight: 1.25;     /* For headings */
+  --spike-line-height-snug: 1.375;     /* For large text */
+  --spike-line-height-normal: 1.5;     /* Default for body text */
+  --spike-line-height-relaxed: 1.625;  /* For long-form content */
+  --spike-line-height-loose: 2;        /* For very spaced content */
+  
+  /* Letter Spacing */
+  --spike-letter-spacing-tight: -0.025em;
+  --spike-letter-spacing-normal: 0;
+  --spike-letter-spacing-wide: 0.025em;
+  --spike-letter-spacing-wider: 0.05em;
+  --spike-letter-spacing-widest: 0.1em;
+  
+  /* Typography Scale Presets */
+  /* Headings */
+  --spike-heading-1-size: var(--spike-font-size-4xl);
+  --spike-heading-1-weight: var(--spike-font-weight-bold);
+  --spike-heading-1-line-height: var(--spike-line-height-tight);
+  --spike-heading-1-letter-spacing: var(--spike-letter-spacing-tight);
+  
+  --spike-heading-2-size: var(--spike-font-size-3xl);
+  --spike-heading-2-weight: var(--spike-font-weight-bold);
+  --spike-heading-2-line-height: var(--spike-line-height-tight);
+  --spike-heading-2-letter-spacing: var(--spike-letter-spacing-tight);
+  
+  --spike-heading-3-size: var(--spike-font-size-2xl);
+  --spike-heading-3-weight: var(--spike-font-weight-semibold);
+  --spike-heading-3-line-height: var(--spike-line-height-snug);
+  --spike-heading-3-letter-spacing: var(--spike-letter-spacing-normal);
+  
+  --spike-heading-4-size: var(--spike-font-size-xl);
+  --spike-heading-4-weight: var(--spike-font-weight-semibold);
+  --spike-heading-4-line-height: var(--spike-line-height-snug);
+  --spike-heading-4-letter-spacing: var(--spike-letter-spacing-normal);
+  
+  --spike-heading-5-size: var(--spike-font-size-lg);
+  --spike-heading-5-weight: var(--spike-font-weight-medium);
+  --spike-heading-5-line-height: var(--spike-line-height-normal);
+  --spike-heading-5-letter-spacing: var(--spike-letter-spacing-normal);
+  
+  --spike-heading-6-size: var(--spike-font-size-base);
+  --spike-heading-6-weight: var(--spike-font-weight-medium);
+  --spike-heading-6-line-height: var(--spike-line-height-normal);
+  --spike-heading-6-letter-spacing: var(--spike-letter-spacing-normal);
+  
+  /* Body Text */
+  --spike-body-size: var(--spike-font-size-base);
+  --spike-body-weight: var(--spike-font-weight-regular);
+  --spike-body-line-height: var(--spike-line-height-relaxed);
+  --spike-body-letter-spacing: var(--spike-letter-spacing-normal);
+  
+  /* Small Text */
+  --spike-small-size: var(--spike-font-size-sm);
+  --spike-small-weight: var(--spike-font-weight-regular);
+  --spike-small-line-height: var(--spike-line-height-normal);
+  --spike-small-letter-spacing: var(--spike-letter-spacing-normal);
+  
+  /* Caption/Meta Text */
+  --spike-caption-size: var(--spike-font-size-xs);
+  --spike-caption-weight: var(--spike-font-weight-regular);
+  --spike-caption-line-height: var(--spike-line-height-normal);
+  --spike-caption-letter-spacing: var(--spike-letter-spacing-wide);
+  
+  /* Button Text */
+  --spike-button-font-size: var(--spike-font-size-sm);
+  --spike-button-font-weight: var(--spike-font-weight-semibold);
+  --spike-button-line-height: 1;
+  --spike-button-letter-spacing: var(--spike-letter-spacing-wide);
+  
+  /* Code/Monospace */
+  --spike-code-size: var(--spike-font-size-sm);
+  --spike-code-weight: var(--spike-font-weight-regular);
+  --spike-code-line-height: var(--spike-line-height-normal);
+  --spike-code-letter-spacing: var(--spike-letter-spacing-normal);
+}
+
+/* Base Typography Classes */
+.spike-text-xs { font-size: var(--spike-font-size-xs); }
+.spike-text-sm { font-size: var(--spike-font-size-sm); }
+.spike-text-base { font-size: var(--spike-font-size-base); }
+.spike-text-lg { font-size: var(--spike-font-size-lg); }
+.spike-text-xl { font-size: var(--spike-font-size-xl); }
+.spike-text-2xl { font-size: var(--spike-font-size-2xl); }
+.spike-text-3xl { font-size: var(--spike-font-size-3xl); }
+.spike-text-4xl { font-size: var(--spike-font-size-4xl); }
+.spike-text-5xl { font-size: var(--spike-font-size-5xl); }
+
+/* Font Weight Classes */
+.spike-font-light { font-weight: var(--spike-font-weight-light); }
+.spike-font-regular { font-weight: var(--spike-font-weight-regular); }
+.spike-font-medium { font-weight: var(--spike-font-weight-medium); }
+.spike-font-semibold { font-weight: var(--spike-font-weight-semibold); }
+.spike-font-bold { font-weight: var(--spike-font-weight-bold); }
+
+/* Line Height Classes */
+.spike-leading-tight { line-height: var(--spike-line-height-tight); }
+.spike-leading-snug { line-height: var(--spike-line-height-snug); }
+.spike-leading-normal { line-height: var(--spike-line-height-normal); }
+.spike-leading-relaxed { line-height: var(--spike-line-height-relaxed); }
+.spike-leading-loose { line-height: var(--spike-line-height-loose); }

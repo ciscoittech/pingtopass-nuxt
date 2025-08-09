@@ -1,0 +1,30 @@
+/* Spike Theme - Main Entry Point */
+
+/* Design Tokens */
+@import './tokens/_colors.css';
+@import './tokens/_typography.css';
+@import './tokens/_spacing.css';
+@import './tokens/_shadows.css';
+@import './tokens/_animations.css';
+@import './tokens/_breakpoints.css';
+
+/* Base Styles */
+@import './base/_reset.css';
+@import './base/_global.css';
+@import './base/_utilities.css';
+
+/* Integration Layer - Bridge between Spike theme and @nuxt/ui */
+@import './integration/nuxt-ui-bridge.css';
+
+/* Component Styles (will be added as components are created) */
+/* @import './components/_buttons.css'; */
+/* @import './components/_cards.css'; */
+/* @import './components/_forms.css'; */
+/* @import './components/_modals.css'; */
+
+/* Page Styles */
+@import './pages/_landing.css';
+@import './pages/_login.css';
+@import './pages/_dashboard.css';
+@import './pages/_exams.css';
+@import './pages/_legal.css';

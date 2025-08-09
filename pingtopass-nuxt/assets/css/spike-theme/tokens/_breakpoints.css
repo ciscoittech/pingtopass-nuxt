@@ -1,0 +1,215 @@
+/* Spike Theme Breakpoint Tokens */
+
+:root {
+  /* Breakpoint Values */
+  --spike-breakpoint-xs: 0px;
+  --spike-breakpoint-sm: 576px;
+  --spike-breakpoint-md: 768px;
+  --spike-breakpoint-lg: 992px;
+  --spike-breakpoint-xl: 1200px;
+  --spike-breakpoint-2xl: 1400px;
+  --spike-breakpoint-3xl: 1600px;
+  
+  /* Container Max Widths at Each Breakpoint */
+  --spike-container-xs: 100%;
+  --spike-container-sm: 540px;
+  --spike-container-md: 720px;
+  --spike-container-lg: 960px;
+  --spike-container-xl: 1140px;
+  --spike-container-2xl: 1320px;
+  --spike-container-3xl: 1520px;
+}
+
+/* PostCSS Custom Media Queries */
+@custom-media --xs-up (min-width: 0);
+@custom-media --sm-up (min-width: 576px);
+@custom-media --md-up (min-width: 768px);
+@custom-media --lg-up (min-width: 992px);
+@custom-media --xl-up (min-width: 1200px);
+@custom-media --2xl-up (min-width: 1400px);
+@custom-media --3xl-up (min-width: 1600px);
+
+/* Down breakpoints (max-width) */
+@custom-media --xs-down (max-width: 575.98px);
+@custom-media --sm-down (max-width: 767.98px);
+@custom-media --md-down (max-width: 991.98px);
+@custom-media --lg-down (max-width: 1199.98px);
+@custom-media --xl-down (max-width: 1399.98px);
+@custom-media --2xl-down (max-width: 1599.98px);
+
+/* Range breakpoints */
+@custom-media --xs-only (min-width: 0) and (max-width: 575.98px);
+@custom-media --sm-only (min-width: 576px) and (max-width: 767.98px);
+@custom-media --md-only (min-width: 768px) and (max-width: 991.98px);
+@custom-media --lg-only (min-width: 992px) and (max-width: 1199.98px);
+@custom-media --xl-only (min-width: 1200px) and (max-width: 1399.98px);
+@custom-media --2xl-only (min-width: 1400px) and (max-width: 1599.98px);
+
+/* Semantic breakpoints */
+@custom-media --mobile (max-width: 767.98px);
+@custom-media --tablet (min-width: 768px) and (max-width: 1199.98px);
+@custom-media --desktop (min-width: 1200px);
+@custom-media --mobile-up (min-width: 0);
+@custom-media --tablet-up (min-width: 768px);
+@custom-media --desktop-up (min-width: 1200px);
+
+/* Orientation breakpoints */
+@custom-media --landscape (orientation: landscape);
+@custom-media --portrait (orientation: portrait);
+
+/* High DPI displays */
+@custom-media --retina (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi);
+
+/* Print media */
+@custom-media --print print;
+
+/* Container Responsive Classes */
+.spike-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spike-layout-container-padding, 1rem);
+  padding-right: var(--spike-layout-container-padding, 1rem);
+}
+
+@media (min-width: 576px) {
+  .spike-container {
+    max-width: var(--spike-container-sm);
+  }
+}
+
+@media (min-width: 768px) {
+  .spike-container {
+    max-width: var(--spike-container-md);
+  }
+}
+
+@media (min-width: 992px) {
+  .spike-container {
+    max-width: var(--spike-container-lg);
+  }
+}
+
+@media (min-width: 1200px) {
+  .spike-container {
+    max-width: var(--spike-container-xl);
+  }
+}
+
+@media (min-width: 1400px) {
+  .spike-container {
+    max-width: var(--spike-container-2xl);
+  }
+}
+
+@media (min-width: 1600px) {
+  .spike-container {
+    max-width: var(--spike-container-3xl);
+  }
+}
+
+/* Fluid Container */
+.spike-container-fluid {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spike-layout-container-padding, 1rem);
+  padding-right: var(--spike-layout-container-padding, 1rem);
+}
+
+/* Responsive Visibility Utilities */
+.spike-hidden-xs { display: none; }
+.spike-hidden-sm { display: none; }
+.spike-hidden-md { display: none; }
+.spike-hidden-lg { display: none; }
+.spike-hidden-xl { display: none; }
+.spike-hidden-2xl { display: none; }
+
+@media (min-width: 576px) {
+  .spike-hidden-xs { display: revert; }
+  .spike-hidden-sm { display: none; }
+}
+
+@media (min-width: 768px) {
+  .spike-hidden-sm { display: revert; }
+  .spike-hidden-md { display: none; }
+}
+
+@media (min-width: 992px) {
+  .spike-hidden-md { display: revert; }
+  .spike-hidden-lg { display: none; }
+}
+
+@media (min-width: 1200px) {
+  .spike-hidden-lg { display: revert; }
+  .spike-hidden-xl { display: none; }
+}
+
+@media (min-width: 1400px) {
+  .spike-hidden-xl { display: revert; }
+  .spike-hidden-2xl { display: none; }
+}
+
+@media (min-width: 1600px) {
+  .spike-hidden-2xl { display: revert; }
+}
+
+/* Show only on specific breakpoints */
+.spike-visible-xs-only,
+.spike-visible-sm-only,
+.spike-visible-md-only,
+.spike-visible-lg-only,
+.spike-visible-xl-only,
+.spike-visible-2xl-only {
+  display: none;
+}
+
+@media (max-width: 575.98px) {
+  .spike-visible-xs-only { display: revert; }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .spike-visible-sm-only { display: revert; }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .spike-visible-md-only { display: revert; }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .spike-visible-lg-only { display: revert; }
+}
+
+@media (min-width: 1200px) and (max-width: 1399.98px) {
+  .spike-visible-xl-only { display: revert; }
+}
+
+@media (min-width: 1400px) {
+  .spike-visible-2xl-only { display: revert; }
+}
+
+/* Mobile-specific utilities */
+@media (max-width: 767.98px) {
+  .spike-mobile-hidden { display: none !important; }
+  .spike-mobile-block { display: block !important; }
+  .spike-mobile-flex { display: flex !important; }
+  .spike-mobile-grid { display: grid !important; }
+  
+  /* Mobile text alignment */
+  .spike-mobile-text-center { text-align: center !important; }
+  .spike-mobile-text-left { text-align: left !important; }
+  .spike-mobile-text-right { text-align: right !important; }
+}
+
+/* Desktop-specific utilities */
+@media (min-width: 768px) {
+  .spike-desktop-hidden { display: none !important; }
+  .spike-desktop-block { display: block !important; }
+  .spike-desktop-flex { display: flex !important; }
+  .spike-desktop-grid { display: grid !important; }
+  
+  /* Desktop text alignment */
+  .spike-desktop-text-center { text-align: center !important; }
+  .spike-desktop-text-left { text-align: left !important; }
+  .spike-desktop-text-right { text-align: right !important; }
+}

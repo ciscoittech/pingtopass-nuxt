@@ -1,0 +1,173 @@
+/* Spike Theme Spacing Tokens */
+
+:root {
+  /* Base spacing unit (rem-based for accessibility) */
+  --spike-space-base: 1rem; /* 16px */
+  
+  /* Spacing Scale - 8px base grid system */
+  --spike-space-0: 0;
+  --spike-space-px: 1px;
+  --spike-space-0-5: 0.125rem;  /* 2px */
+  --spike-space-1: 0.25rem;     /* 4px */
+  --spike-space-1-5: 0.375rem;  /* 6px */
+  --spike-space-2: 0.5rem;      /* 8px */
+  --spike-space-2-5: 0.625rem;  /* 10px */
+  --spike-space-3: 0.75rem;     /* 12px */
+  --spike-space-3-5: 0.875rem;  /* 14px */
+  --spike-space-4: 1rem;        /* 16px */
+  --spike-space-5: 1.25rem;     /* 20px */
+  --spike-space-6: 1.5rem;      /* 24px */
+  --spike-space-7: 1.75rem;     /* 28px */
+  --spike-space-8: 2rem;        /* 32px */
+  --spike-space-9: 2.25rem;     /* 36px */
+  --spike-space-10: 2.5rem;     /* 40px */
+  --spike-space-11: 2.75rem;    /* 44px */
+  --spike-space-12: 3rem;       /* 48px */
+  --spike-space-14: 3.5rem;     /* 56px */
+  --spike-space-16: 4rem;       /* 64px */
+  --spike-space-20: 5rem;       /* 80px */
+  --spike-space-24: 6rem;       /* 96px */
+  --spike-space-28: 7rem;       /* 112px */
+  --spike-space-32: 8rem;       /* 128px */
+  --spike-space-36: 9rem;       /* 144px */
+  --spike-space-40: 10rem;      /* 160px */
+  --spike-space-44: 11rem;      /* 176px */
+  --spike-space-48: 12rem;      /* 192px */
+  --spike-space-52: 13rem;      /* 208px */
+  --spike-space-56: 14rem;      /* 224px */
+  --spike-space-60: 15rem;      /* 240px */
+  --spike-space-64: 16rem;      /* 256px */
+  --spike-space-72: 18rem;      /* 288px */
+  --spike-space-80: 20rem;      /* 320px */
+  --spike-space-96: 24rem;      /* 384px */
+  
+  /* Semantic Spacing - Component-specific */
+  
+  /* Control/Input Heights */
+  --spike-control-height-xs: 1.75rem;   /* 28px */
+  --spike-control-height-sm: 2rem;      /* 32px */
+  --spike-control-height-md: 2.5rem;    /* 40px */
+  --spike-control-height-lg: 3rem;      /* 48px */
+  --spike-control-height-xl: 3.5rem;    /* 56px */
+  
+  /* Component Spacing */
+  --spike-component-padding-xs: var(--spike-space-2);   /* 8px */
+  --spike-component-padding-sm: var(--spike-space-3);   /* 12px */
+  --spike-component-padding-md: var(--spike-space-4);   /* 16px */
+  --spike-component-padding-lg: var(--spike-space-6);   /* 24px */
+  --spike-component-padding-xl: var(--spike-space-8);   /* 32px */
+  
+  /* Layout Spacing */
+  --spike-layout-gutter: var(--spike-space-6);          /* 24px */
+  --spike-layout-section-gap: var(--spike-space-16);    /* 64px */
+  --spike-layout-container-padding: var(--spike-space-6); /* 24px */
+  
+  /* Card Spacing */
+  --spike-card-padding-sm: var(--spike-space-4);        /* 16px */
+  --spike-card-padding-md: var(--spike-space-6);        /* 24px */
+  --spike-card-padding-lg: var(--spike-space-8);        /* 32px */
+  --spike-card-gap: var(--spike-space-4);               /* 16px */
+  
+  /* Button Spacing */
+  --spike-button-padding-x-xs: var(--spike-space-2);    /* 8px */
+  --spike-button-padding-x-sm: var(--spike-space-3);    /* 12px */
+  --spike-button-padding-x-md: var(--spike-space-4);    /* 16px */
+  --spike-button-padding-x-lg: var(--spike-space-6);    /* 24px */
+  --spike-button-padding-x-xl: var(--spike-space-8);    /* 32px */
+  
+  --spike-button-padding-y-xs: var(--spike-space-1);    /* 4px */
+  --spike-button-padding-y-sm: var(--spike-space-1-5);  /* 6px */
+  --spike-button-padding-y-md: var(--spike-space-2);    /* 8px */
+  --spike-button-padding-y-lg: var(--spike-space-3);    /* 12px */
+  --spike-button-padding-y-xl: var(--spike-space-4);    /* 16px */
+  
+  /* Form Spacing */
+  --spike-form-field-gap: var(--spike-space-4);         /* 16px */
+  --spike-form-section-gap: var(--spike-space-8);       /* 32px */
+  --spike-form-input-padding-x: var(--spike-space-3);   /* 12px */
+  --spike-form-input-padding-y: var(--spike-space-2);   /* 8px */
+  
+  /* Navigation Spacing */
+  --spike-nav-item-padding-x: var(--spike-space-4);     /* 16px */
+  --spike-nav-item-padding-y: var(--spike-space-2);     /* 8px */
+  --spike-nav-gap: var(--spike-space-1);                /* 4px */
+  
+  /* Modal/Dialog Spacing */
+  --spike-modal-padding: var(--spike-space-6);          /* 24px */
+  --spike-modal-header-padding: var(--spike-space-6);   /* 24px */
+  --spike-modal-footer-padding: var(--spike-space-6);   /* 24px */
+  --spike-modal-content-gap: var(--spike-space-4);      /* 16px */
+  
+  /* Table Spacing */
+  --spike-table-cell-padding-x: var(--spike-space-3);   /* 12px */
+  --spike-table-cell-padding-y: var(--spike-space-2);   /* 8px */
+  --spike-table-header-padding-y: var(--spike-space-3); /* 12px */
+  
+  /* Container Max Widths */
+  --spike-container-xs: 20rem;     /* 320px */
+  --spike-container-sm: 24rem;     /* 384px */
+  --spike-container-md: 28rem;     /* 448px */
+  --spike-container-lg: 32rem;     /* 512px */
+  --spike-container-xl: 36rem;     /* 576px */
+  --spike-container-2xl: 42rem;    /* 672px */
+  --spike-container-3xl: 48rem;    /* 768px */
+  --spike-container-4xl: 56rem;    /* 896px */
+  --spike-container-5xl: 64rem;    /* 1024px */
+  --spike-container-6xl: 72rem;    /* 1152px */
+  --spike-container-7xl: 80rem;    /* 1280px */
+  --spike-container-full: 100%;
+  
+  /* Z-Index Layers */
+  --spike-z-dropdown: 1000;
+  --spike-z-sticky: 1020;
+  --spike-z-fixed: 1030;
+  --spike-z-modal-backdrop: 1040;
+  --spike-z-modal: 1050;
+  --spike-z-popover: 1060;
+  --spike-z-tooltip: 1070;
+  --spike-z-toast: 1080;
+}
+
+/* Responsive Spacing Adjustments */
+@media (max-width: 767px) {
+  :root {
+    /* Reduce spacing on mobile */
+    --spike-layout-container-padding: var(--spike-space-4);
+    --spike-layout-section-gap: var(--spike-space-12);
+    --spike-card-padding-md: var(--spike-space-4);
+    --spike-card-padding-lg: var(--spike-space-6);
+    --spike-modal-padding: var(--spike-space-4);
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    /* Increase spacing on large screens */
+    --spike-layout-container-padding: var(--spike-space-8);
+    --spike-layout-section-gap: var(--spike-space-20);
+    --spike-card-padding-lg: var(--spike-space-10);
+  }
+}
+
+/* Utility Classes for Spacing */
+.spike-m-0 { margin: var(--spike-space-0); }
+.spike-m-1 { margin: var(--spike-space-1); }
+.spike-m-2 { margin: var(--spike-space-2); }
+.spike-m-3 { margin: var(--spike-space-3); }
+.spike-m-4 { margin: var(--spike-space-4); }
+.spike-m-5 { margin: var(--spike-space-5); }
+.spike-m-6 { margin: var(--spike-space-6); }
+.spike-m-8 { margin: var(--spike-space-8); }
+.spike-m-10 { margin: var(--spike-space-10); }
+.spike-m-12 { margin: var(--spike-space-12); }
+
+.spike-p-0 { padding: var(--spike-space-0); }
+.spike-p-1 { padding: var(--spike-space-1); }
+.spike-p-2 { padding: var(--spike-space-2); }
+.spike-p-3 { padding: var(--spike-space-3); }
+.spike-p-4 { padding: var(--spike-space-4); }
+.spike-p-5 { padding: var(--spike-space-5); }
+.spike-p-6 { padding: var(--spike-space-6); }
+.spike-p-8 { padding: var(--spike-space-8); }
+.spike-p-10 { padding: var(--spike-space-10); }
+.spike-p-12 { padding: var(--spike-space-12); }

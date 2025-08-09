@@ -1,0 +1,118 @@
+/* Spike Theme Shadow Tokens */
+
+:root {
+  /* Base Shadow Colors */
+  --spike-shadow-color: 0, 0, 0; /* RGB values for alpha manipulation */
+  --spike-shadow-colored: var(--spike-primary); /* For colored shadows */
+  
+  /* Shadow Definitions */
+  --spike-shadow-xs: 0 1px 2px 0 rgba(var(--spike-shadow-color), 0.05);
+  --spike-shadow-sm: 0 1px 3px 0 rgba(var(--spike-shadow-color), 0.1), 
+                     0 1px 2px -1px rgba(var(--spike-shadow-color), 0.1);
+  --spike-shadow-md: 0 4px 6px -1px rgba(var(--spike-shadow-color), 0.1), 
+                     0 2px 4px -2px rgba(var(--spike-shadow-color), 0.1);
+  --spike-shadow-lg: 0 10px 15px -3px rgba(var(--spike-shadow-color), 0.1), 
+                     0 4px 6px -4px rgba(var(--spike-shadow-color), 0.1);
+  --spike-shadow-xl: 0 20px 25px -5px rgba(var(--spike-shadow-color), 0.1), 
+                     0 8px 10px -6px rgba(var(--spike-shadow-color), 0.1);
+  --spike-shadow-2xl: 0 25px 50px -12px rgba(var(--spike-shadow-color), 0.25);
+  --spike-shadow-inner: inset 0 2px 4px 0 rgba(var(--spike-shadow-color), 0.05);
+  
+  /* Component-specific Shadows */
+  --spike-shadow-button: var(--spike-shadow-sm);
+  --spike-shadow-button-hover: var(--spike-shadow-md);
+  --spike-shadow-button-active: var(--spike-shadow-xs);
+  
+  --spike-shadow-card: var(--spike-shadow-sm);
+  --spike-shadow-card-hover: var(--spike-shadow-md);
+  --spike-shadow-card-elevated: var(--spike-shadow-lg);
+  
+  --spike-shadow-modal: var(--spike-shadow-2xl);
+  --spike-shadow-dropdown: var(--spike-shadow-lg);
+  --spike-shadow-tooltip: var(--spike-shadow-md);
+  --spike-shadow-popover: var(--spike-shadow-lg);
+  
+  /* Focus Shadows */
+  --spike-shadow-focus: 0 0 0 3px rgba(var(--spike-primary), 0.2);
+  --spike-shadow-focus-error: 0 0 0 3px rgba(220, 53, 69, 0.2);
+  --spike-shadow-focus-success: 0 0 0 3px rgba(40, 167, 69, 0.2);
+  --spike-shadow-focus-warning: 0 0 0 3px rgba(255, 193, 7, 0.2);
+  
+  /* Colored Shadows (for primary elements) */
+  --spike-shadow-primary: 0 4px 14px 0 rgba(var(--spike-primary), 0.15);
+  --spike-shadow-primary-lg: 0 8px 25px 0 rgba(var(--spike-primary), 0.2);
+  
+  /* Glow Effects */
+  --spike-glow-sm: 0 0 5px rgba(var(--spike-primary), 0.3);
+  --spike-glow-md: 0 0 10px rgba(var(--spike-primary), 0.3);
+  --spike-glow-lg: 0 0 20px rgba(var(--spike-primary), 0.3);
+  
+  /* Elevation System (Material Design inspired) */
+  --spike-elevation-0: none;
+  --spike-elevation-1: 0 2px 1px -1px rgba(var(--spike-shadow-color), 0.2),
+                       0 1px 1px 0 rgba(var(--spike-shadow-color), 0.14),
+                       0 1px 3px 0 rgba(var(--spike-shadow-color), 0.12);
+  --spike-elevation-2: 0 3px 1px -2px rgba(var(--spike-shadow-color), 0.2),
+                       0 2px 2px 0 rgba(var(--spike-shadow-color), 0.14),
+                       0 1px 5px 0 rgba(var(--spike-shadow-color), 0.12);
+  --spike-elevation-3: 0 3px 3px -2px rgba(var(--spike-shadow-color), 0.2),
+                       0 3px 4px 0 rgba(var(--spike-shadow-color), 0.14),
+                       0 1px 8px 0 rgba(var(--spike-shadow-color), 0.12);
+  --spike-elevation-4: 0 2px 4px -1px rgba(var(--spike-shadow-color), 0.2),
+                       0 4px 5px 0 rgba(var(--spike-shadow-color), 0.14),
+                       0 1px 10px 0 rgba(var(--spike-shadow-color), 0.12);
+  --spike-elevation-6: 0 3px 5px -1px rgba(var(--spike-shadow-color), 0.2),
+                       0 6px 10px 0 rgba(var(--spike-shadow-color), 0.14),
+                       0 1px 18px 0 rgba(var(--spike-shadow-color), 0.12);
+  --spike-elevation-8: 0 5px 5px -3px rgba(var(--spike-shadow-color), 0.2),
+                       0 8px 10px 1px rgba(var(--spike-shadow-color), 0.14),
+                       0 3px 14px 2px rgba(var(--spike-shadow-color), 0.12);
+  --spike-elevation-12: 0 7px 8px -4px rgba(var(--spike-shadow-color), 0.2),
+                        0 12px 17px 2px rgba(var(--spike-shadow-color), 0.14),
+                        0 5px 22px 4px rgba(var(--spike-shadow-color), 0.12);
+  --spike-elevation-16: 0 8px 10px -5px rgba(var(--spike-shadow-color), 0.2),
+                        0 16px 24px 2px rgba(var(--spike-shadow-color), 0.14),
+                        0 6px 30px 5px rgba(var(--spike-shadow-color), 0.12);
+  --spike-elevation-24: 0 11px 15px -7px rgba(var(--spike-shadow-color), 0.2),
+                        0 24px 38px 3px rgba(var(--spike-shadow-color), 0.14),
+                        0 9px 46px 8px rgba(var(--spike-shadow-color), 0.12);
+}
+
+/* Dark Mode Shadow Adjustments */
+[data-theme="dark"] {
+  --spike-shadow-color: 0, 0, 0; /* Deeper shadows in dark mode */
+  
+  /* Increase shadow opacity for better contrast on dark backgrounds */
+  --spike-shadow-xs: 0 1px 2px 0 rgba(var(--spike-shadow-color), 0.3);
+  --spike-shadow-sm: 0 1px 3px 0 rgba(var(--spike-shadow-color), 0.4), 
+                     0 1px 2px -1px rgba(var(--spike-shadow-color), 0.4);
+  --spike-shadow-md: 0 4px 6px -1px rgba(var(--spike-shadow-color), 0.4), 
+                     0 2px 4px -2px rgba(var(--spike-shadow-color), 0.4);
+  --spike-shadow-lg: 0 10px 15px -3px rgba(var(--spike-shadow-color), 0.4), 
+                     0 4px 6px -4px rgba(var(--spike-shadow-color), 0.4);
+  --spike-shadow-xl: 0 20px 25px -5px rgba(var(--spike-shadow-color), 0.4), 
+                     0 8px 10px -6px rgba(var(--spike-shadow-color), 0.4);
+  --spike-shadow-2xl: 0 25px 50px -12px rgba(var(--spike-shadow-color), 0.5);
+}
+
+/* Utility Classes */
+.spike-shadow-none { box-shadow: none; }
+.spike-shadow-xs { box-shadow: var(--spike-shadow-xs); }
+.spike-shadow-sm { box-shadow: var(--spike-shadow-sm); }
+.spike-shadow-md { box-shadow: var(--spike-shadow-md); }
+.spike-shadow-lg { box-shadow: var(--spike-shadow-lg); }
+.spike-shadow-xl { box-shadow: var(--spike-shadow-xl); }
+.spike-shadow-2xl { box-shadow: var(--spike-shadow-2xl); }
+.spike-shadow-inner { box-shadow: var(--spike-shadow-inner); }
+
+/* Elevation Classes */
+.spike-elevation-0 { box-shadow: var(--spike-elevation-0); }
+.spike-elevation-1 { box-shadow: var(--spike-elevation-1); }
+.spike-elevation-2 { box-shadow: var(--spike-elevation-2); }
+.spike-elevation-3 { box-shadow: var(--spike-elevation-3); }
+.spike-elevation-4 { box-shadow: var(--spike-elevation-4); }
+.spike-elevation-6 { box-shadow: var(--spike-elevation-6); }
+.spike-elevation-8 { box-shadow: var(--spike-elevation-8); }
+.spike-elevation-12 { box-shadow: var(--spike-elevation-12); }
+.spike-elevation-16 { box-shadow: var(--spike-elevation-16); }
+.spike-elevation-24 { box-shadow: var(--spike-elevation-24); }

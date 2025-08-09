@@ -1,0 +1,210 @@
+/**
+ * Spike Theme Integration Bridge for @nuxt/ui
+ * 
+ * This file creates a seamless bridge between the Spike theme system
+ * and @nuxt/ui components, ensuring consistent design and no conflicts.
+ */
+
+/* ===== CSS CUSTOM PROPERTIES BRIDGE ===== */
+:root {
+  /* Map Spike theme colors to @nuxt/ui color system */
+  
+  /* Primary color mapping (Spike blue) */
+  --spike-50: 227, 242, 253;   /* #e3f2fd */
+  --spike-100: 187, 222, 251;  /* #bbdefb */
+  --spike-200: 144, 202, 249;  /* #90caf9 */
+  --spike-300: 100, 181, 246;  /* #64b5f6 */
+  --spike-400: 66, 165, 245;   /* #42a5f5 */
+  --spike-500: 0, 133, 219;    /* #0085db - PRIMARY */
+  --spike-600: 0, 107, 184;    /* #006bb8 */
+  --spike-700: 0, 81, 149;     /* #005195 */
+  --spike-800: 0, 55, 114;     /* #003772 */
+  --spike-900: 0, 29, 79;      /* #001d4f */
+  --spike-950: 0, 18, 38;      /* #001226 */
+  
+  /* Neutral/Gray color mapping */
+  --neutral-50: 248, 249, 250;  /* #f8f9fa */
+  --neutral-100: 233, 236, 239; /* #e9ecef */
+  --neutral-200: 222, 226, 230; /* #dee2e6 */
+  --neutral-300: 206, 212, 218; /* #ced4da */
+  --neutral-400: 173, 181, 189; /* #adb5bd */
+  --neutral-500: 108, 117, 125; /* #6c757d */
+  --neutral-600: 73, 80, 87;    /* #495057 */
+  --neutral-700: 52, 58, 64;    /* #343a40 */
+  --neutral-800: 33, 37, 41;    /* #212529 */
+  --neutral-900: 0, 0, 0;       /* #000000 */
+  --neutral-950: 0, 0, 0;       /* #000000 */
+  
+  /* Semantic colors */
+  --color-success-500: 40, 167, 69;   /* #28a745 */
+  --color-warning-500: 255, 193, 7;   /* #ffc107 */  
+  --color-error-500: 220, 53, 69;     /* #dc3545 */
+  --color-info-500: 70, 202, 235;     /* #46caeb */
+}
+
+/* ===== COMPONENT INTEGRATION FIXES ===== */
+
+/* Ensure @nuxt/ui components respect Spike spacing and typography */
+.ui-button,
+.ui-input,
+.ui-card,
+.ui-modal,
+.ui-dropdown,
+.ui-badge,
+.ui-notification {
+  font-family: var(--spike-font-family-base, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
+}
+
+/* Button integration - ensure Spike button styles don't conflict */
+.ui-button {
+  /* Use Spike's transition timing */
+  transition: all 200ms ease-out;
+  
+  /* Ensure proper focus states */
+  &:focus-visible {
+    outline: 2px solid rgb(var(--spike-500));
+    outline-offset: 2px;
+  }
+}
+
+/* Input integration */
+.ui-input,
+.ui-textarea,
+.ui-select {
+  /* Ensure focus states match Spike theme */
+  &:focus,
+  &:focus-within {
+    border-color: rgb(var(--spike-500));
+    box-shadow: 0 0 0 3px rgb(var(--spike-500) / 0.1);
+  }
+}
+
+/* Card integration */
+.ui-card {
+  /* Use Spike shadow system */
+  box-shadow: var(--spike-shadow-sm, 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1));
+  
+  &:hover {
+    box-shadow: var(--spike-shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1));
+  }
+}
+
+/* Modal integration */
+.ui-modal {
+  /* Use Spike backdrop and transition timing */
+  backdrop-filter: blur(4px);
+  
+  .ui-modal-container {
+    transition: all 200ms ease-out;
+  }
+}
+
+/* ===== RESPONSIVE DESIGN INTEGRATION ===== */
+
+/* Ensure @nuxt/ui respects Spike breakpoints */
+@media (max-width: 768px) {
+  .ui-button {
+    font-size: 0.875rem; /* 14px */
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .ui-card {
+    margin: 0.5rem;
+    border-radius: 0.75rem;
+  }
+}
+
+/* ===== DARK MODE INTEGRATION ===== */
+
+/* Ensure proper dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Adjust colors for dark mode while maintaining Spike brand consistency */
+    --spike-50: 0, 18, 38;      /* Darkest becomes lightest in dark mode */
+    --spike-100: 0, 29, 79;     /* Very dark becomes very light */
+    --spike-200: 0, 55, 114;    /* etc... */
+    --spike-800: 144, 202, 249; /* Light becomes dark */
+    --spike-900: 187, 222, 251; /* Very light becomes very dark */
+    --spike-950: 227, 242, 253; /* Lightest becomes darkest */
+  }
+}
+
+/* Dark mode class-based (for explicit dark mode toggle) */
+.dark {
+  /* Same color inversions as above for class-based dark mode */
+  --spike-50: 0, 18, 38;
+  --spike-100: 0, 29, 79;
+  --spike-200: 0, 55, 114;
+  --spike-300: 0, 107, 184;
+  --spike-400: 0, 133, 219;
+  /* Keep primary the same: --spike-500: 0, 133, 219; */
+  --spike-600: 66, 165, 245;
+  --spike-700: 100, 181, 246;
+  --spike-800: 144, 202, 249;
+  --spike-900: 187, 222, 251;
+  --spike-950: 227, 242, 253;
+  
+  /* Adjust neutral colors for dark mode */
+  --neutral-50: 0, 0, 0;
+  --neutral-100: 33, 37, 41;
+  --neutral-200: 52, 58, 64;
+  --neutral-300: 73, 80, 87;
+  --neutral-400: 108, 117, 125;
+  --neutral-500: 173, 181, 189;
+  --neutral-600: 206, 212, 218;
+  --neutral-700: 222, 226, 230;
+  --neutral-800: 233, 236, 239;
+  --neutral-900: 248, 249, 250;
+  --neutral-950: 248, 249, 250;
+}
+
+/* ===== ANIMATION INTEGRATION ===== */
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .ui-button,
+  .ui-card,
+  .ui-modal,
+  .ui-dropdown,
+  .ui-notification {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ===== ACCESSIBILITY INTEGRATION ===== */
+
+/* Ensure proper contrast ratios for accessibility */
+.ui-button:focus-visible,
+.ui-input:focus-visible,
+.ui-select:focus-visible {
+  outline: 2px solid rgb(var(--spike-500));
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ui-button,
+  .ui-card,
+  .ui-input,
+  .ui-select {
+    border-width: 2px;
+    border-style: solid;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+
+@media print {
+  .ui-modal,
+  .ui-dropdown,
+  .ui-notification {
+    display: none !important;
+  }
+  
+  .ui-button {
+    background: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+  }
+}

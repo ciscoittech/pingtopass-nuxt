@@ -1,0 +1,307 @@
+/* Spike Theme Global Styles */
+
+/* Root Element Styling */
+html {
+  font-family: var(--spike-font-family-sans);
+  font-size: 16px; /* Base font size - never change this for accessibility */
+  color: var(--spike-text-primary);
+  background-color: var(--spike-background);
+  line-height: var(--spike-line-height-normal);
+}
+
+body {
+  font-family: var(--spike-font-family-sans);
+  font-size: var(--spike-body-size);
+  font-weight: var(--spike-body-weight);
+  line-height: var(--spike-body-line-height);
+  letter-spacing: var(--spike-body-letter-spacing);
+  color: var(--spike-text-primary);
+  background-color: var(--spike-background);
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+/* Typography Hierarchy */
+h1, .spike-h1 {
+  font-size: var(--spike-heading-1-size);
+  font-weight: var(--spike-heading-1-weight);
+  line-height: var(--spike-heading-1-line-height);
+  letter-spacing: var(--spike-heading-1-letter-spacing);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-6);
+}
+
+h2, .spike-h2 {
+  font-size: var(--spike-heading-2-size);
+  font-weight: var(--spike-heading-2-weight);
+  line-height: var(--spike-heading-2-line-height);
+  letter-spacing: var(--spike-heading-2-letter-spacing);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-5);
+}
+
+h3, .spike-h3 {
+  font-size: var(--spike-heading-3-size);
+  font-weight: var(--spike-heading-3-weight);
+  line-height: var(--spike-heading-3-line-height);
+  letter-spacing: var(--spike-heading-3-letter-spacing);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-4);
+}
+
+h4, .spike-h4 {
+  font-size: var(--spike-heading-4-size);
+  font-weight: var(--spike-heading-4-weight);
+  line-height: var(--spike-heading-4-line-height);
+  letter-spacing: var(--spike-heading-4-letter-spacing);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-3);
+}
+
+h5, .spike-h5 {
+  font-size: var(--spike-heading-5-size);
+  font-weight: var(--spike-heading-5-weight);
+  line-height: var(--spike-heading-5-line-height);
+  letter-spacing: var(--spike-heading-5-letter-spacing);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-3);
+}
+
+h6, .spike-h6 {
+  font-size: var(--spike-heading-6-size);
+  font-weight: var(--spike-heading-6-weight);
+  line-height: var(--spike-heading-6-line-height);
+  letter-spacing: var(--spike-heading-6-letter-spacing);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-2);
+}
+
+/* Body Text */
+p, .spike-body {
+  font-size: var(--spike-body-size);
+  font-weight: var(--spike-body-weight);
+  line-height: var(--spike-body-line-height);
+  letter-spacing: var(--spike-body-letter-spacing);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-4);
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+/* Small Text */
+small, .spike-small {
+  font-size: var(--spike-small-size);
+  font-weight: var(--spike-small-weight);
+  line-height: var(--spike-small-line-height);
+  letter-spacing: var(--spike-small-letter-spacing);
+  color: var(--spike-text-secondary);
+}
+
+/* Code Elements */
+code, .spike-code {
+  font-family: var(--spike-font-family-mono);
+  font-size: var(--spike-code-size);
+  font-weight: var(--spike-code-weight);
+  line-height: var(--spike-code-line-height);
+  letter-spacing: var(--spike-code-letter-spacing);
+  background-color: var(--spike-neutral-100);
+  color: var(--spike-neutral-800);
+  padding: var(--spike-space-1) var(--spike-space-2);
+  border-radius: var(--spike-space-1);
+}
+
+pre {
+  background-color: var(--spike-neutral-100);
+  color: var(--spike-neutral-800);
+  padding: var(--spike-space-4);
+  border-radius: var(--spike-space-2);
+  overflow-x: auto;
+  margin-bottom: var(--spike-space-4);
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Links */
+a, .spike-link {
+  color: var(--spike-primary);
+  text-decoration: none;
+  transition: var(--spike-transition-colors);
+}
+
+a:hover, .spike-link:hover {
+  color: var(--spike-primary-dark);
+  text-decoration: underline;
+}
+
+a:focus-visible, .spike-link:focus-visible {
+  outline: 2px solid var(--spike-focus);
+  outline-offset: 2px;
+  border-radius: var(--spike-space-1);
+}
+
+/* Lists */
+ul, ol {
+  padding-left: var(--spike-space-6);
+  margin-bottom: var(--spike-space-4);
+}
+
+li {
+  margin-bottom: var(--spike-space-2);
+}
+
+li:last-child {
+  margin-bottom: 0;
+}
+
+/* Definition Lists */
+dl {
+  margin-bottom: var(--spike-space-4);
+}
+
+dt {
+  font-weight: var(--spike-font-weight-semibold);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-1);
+}
+
+dd {
+  margin-left: var(--spike-space-4);
+  margin-bottom: var(--spike-space-3);
+  color: var(--spike-text-secondary);
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid var(--spike-primary);
+  padding-left: var(--spike-space-4);
+  margin: var(--spike-space-6) 0;
+  font-style: italic;
+  color: var(--spike-text-secondary);
+}
+
+blockquote p {
+  margin-bottom: var(--spike-space-3);
+}
+
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+blockquote cite {
+  display: block;
+  font-style: normal;
+  font-size: var(--spike-small-size);
+  color: var(--spike-text-muted);
+  margin-top: var(--spike-space-2);
+}
+
+blockquote cite::before {
+  content: "— ";
+}
+
+/* Horizontal Rules */
+hr, .spike-hr {
+  border: none;
+  height: 1px;
+  background-color: var(--spike-border);
+  margin: var(--spike-space-8) 0;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--spike-space-6);
+}
+
+th, td {
+  padding: var(--spike-table-cell-padding-y) var(--spike-table-cell-padding-x);
+  text-align: left;
+  border-bottom: 1px solid var(--spike-border);
+}
+
+th {
+  font-weight: var(--spike-font-weight-semibold);
+  color: var(--spike-text-primary);
+  background-color: var(--spike-neutral-50);
+  padding-top: var(--spike-table-header-padding-y);
+  padding-bottom: var(--spike-table-header-padding-y);
+}
+
+tbody tr:hover {
+  background-color: var(--spike-neutral-50);
+}
+
+/* Focus Management */
+:focus-visible {
+  outline: 2px solid var(--spike-focus);
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --spike-border: currentColor;
+    --spike-text-secondary: var(--spike-text-primary);
+  }
+}
+
+/* Print Styles */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    color: black !important;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+  
+  p, blockquote, ul, ol, dl, table {
+    page-break-inside: avoid;
+  }
+  
+  a {
+    color: black !important;
+    text-decoration: underline;
+  }
+  
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 10pt;
+  }
+  
+  .spike-hidden-print,
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Dark Mode Text Selection */
+[data-theme="dark"] {
+  ::selection {
+    background-color: var(--spike-primary-alpha-30);
+    color: var(--spike-neutral-0);
+  }
+  
+  ::-moz-selection {
+    background-color: var(--spike-primary-alpha-30);
+    color: var(--spike-neutral-0);
+  }
+}

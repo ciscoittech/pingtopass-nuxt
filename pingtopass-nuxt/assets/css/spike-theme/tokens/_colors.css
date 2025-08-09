@@ -1,0 +1,86 @@
+/* Spike Theme Color Tokens */
+
+:root {
+  /* Primary Palette - Spike Blue */
+  --spike-primary: #0085db;
+  --spike-primary-dark: #006bb8;
+  --spike-primary-light: #339ddf;
+  --spike-primary-alpha-10: rgba(0, 133, 219, 0.1);
+  --spike-primary-alpha-20: rgba(0, 133, 219, 0.2);
+  --spike-primary-alpha-30: rgba(0, 133, 219, 0.3);
+  
+  /* Semantic Colors */
+  --spike-info: #46caeb;
+  --spike-success: #28a745;
+  --spike-warning: #ffc107;
+  --spike-error: #dc3545;
+  --spike-danger: #dc3545;
+  
+  /* Neutral Scale - Optimized for accessibility */
+  --spike-neutral-0: #ffffff;
+  --spike-neutral-50: #f8f9fa;
+  --spike-neutral-100: #e9ecef;
+  --spike-neutral-200: #dee2e6;
+  --spike-neutral-300: #ced4da;
+  --spike-neutral-400: #adb5bd;
+  --spike-neutral-500: #6c757d;
+  --spike-neutral-600: #495057;
+  --spike-neutral-700: #343a40;
+  --spike-neutral-800: #212529;
+  --spike-neutral-900: #000000;
+  
+  /* Contextual Tokens - Light Mode */
+  --spike-surface: var(--spike-neutral-0);
+  --spike-background: var(--spike-neutral-50);
+  --spike-border: var(--spike-neutral-200);
+  --spike-border-muted: var(--spike-neutral-100);
+  --spike-text-primary: var(--spike-neutral-800);
+  --spike-text-secondary: var(--spike-neutral-600);
+  --spike-text-muted: var(--spike-neutral-500);
+  --spike-text-disabled: var(--spike-neutral-400);
+  
+  /* Focus and State Colors */
+  --spike-focus: var(--spike-primary);
+  --spike-focus-ring: var(--spike-primary-alpha-20);
+  --spike-hover-overlay: var(--spike-neutral-alpha-5);
+  --spike-active-overlay: var(--spike-neutral-alpha-10);
+  
+  /* Gradients */
+  --spike-gradient-primary: linear-gradient(135deg, var(--spike-primary) 0%, var(--spike-primary-dark) 100%);
+  --spike-gradient-success: linear-gradient(135deg, var(--spike-success) 0%, #22863a 100%);
+  --spike-gradient-warning: linear-gradient(135deg, var(--spike-warning) 0%, #e69500 100%);
+  --spike-gradient-error: linear-gradient(135deg, var(--spike-error) 0%, #c82333 100%);
+  
+  /* Additional Alpha Variations */
+  --spike-neutral-alpha-5: rgba(33, 37, 41, 0.05);
+  --spike-neutral-alpha-10: rgba(33, 37, 41, 0.1);
+  --spike-neutral-alpha-15: rgba(33, 37, 41, 0.15);
+  --spike-neutral-alpha-20: rgba(33, 37, 41, 0.2);
+}
+
+/* Dark Mode Support (Future-proofing) */
+[data-theme="dark"] {
+  /* Inverted contextual tokens */
+  --spike-surface: var(--spike-neutral-800);
+  --spike-background: var(--spike-neutral-900);
+  --spike-border: var(--spike-neutral-600);
+  --spike-border-muted: var(--spike-neutral-700);
+  --spike-text-primary: var(--spike-neutral-50);
+  --spike-text-secondary: var(--spike-neutral-300);
+  --spike-text-muted: var(--spike-neutral-400);
+  --spike-text-disabled: var(--spike-neutral-500);
+  
+  /* Adjusted overlay colors for dark mode */
+  --spike-hover-overlay: rgba(255, 255, 255, 0.05);
+  --spike-active-overlay: rgba(255, 255, 255, 0.1);
+}
+
+/* High Contrast Mode Support (Accessibility) */
+[data-theme="high-contrast"] {
+  --spike-primary: #0066cc;
+  --spike-text-primary: #000000;
+  --spike-text-secondary: #333333;
+  --spike-border: #000000;
+  --spike-surface: #ffffff;
+  --spike-background: #ffffff;
+}

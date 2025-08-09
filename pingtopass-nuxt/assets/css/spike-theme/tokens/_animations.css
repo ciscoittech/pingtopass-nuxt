@@ -1,0 +1,331 @@
+/* Spike Theme Animation Tokens */
+
+:root {
+  /* Timing Functions - Easing curves */
+  --spike-ease-linear: linear;
+  --spike-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --spike-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --spike-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --spike-ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+  --spike-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --spike-ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  
+  /* Duration Scale */
+  --spike-duration-instant: 0ms;
+  --spike-duration-fast: 150ms;
+  --spike-duration-normal: 250ms;
+  --spike-duration-slow: 350ms;
+  --spike-duration-slower: 500ms;
+  --spike-duration-slowest: 750ms;
+  
+  /* Component-specific Durations */
+  --spike-duration-button: var(--spike-duration-fast);
+  --spike-duration-hover: var(--spike-duration-fast);
+  --spike-duration-focus: var(--spike-duration-fast);
+  --spike-duration-modal: var(--spike-duration-normal);
+  --spike-duration-dropdown: var(--spike-duration-fast);
+  --spike-duration-tooltip: var(--spike-duration-fast);
+  --spike-duration-page-transition: var(--spike-duration-normal);
+  --spike-duration-loading: var(--spike-duration-slow);
+  
+  /* Common Transition Presets */
+  --spike-transition-default: all var(--spike-duration-fast) var(--spike-ease-out);
+  --spike-transition-colors: color var(--spike-duration-fast) var(--spike-ease-out),
+                              background-color var(--spike-duration-fast) var(--spike-ease-out),
+                              border-color var(--spike-duration-fast) var(--spike-ease-out);
+  --spike-transition-shadow: box-shadow var(--spike-duration-fast) var(--spike-ease-out);
+  --spike-transition-transform: transform var(--spike-duration-fast) var(--spike-ease-out);
+  --spike-transition-opacity: opacity var(--spike-duration-fast) var(--spike-ease-out);
+  --spike-transition-scale: transform var(--spike-duration-fast) var(--spike-ease-bounce);
+  
+  /* Hover Animations */
+  --spike-hover-lift: translateY(-2px);
+  --spike-hover-scale: scale(1.02);
+  --spike-hover-scale-sm: scale(1.01);
+  --spike-hover-scale-lg: scale(1.05);
+  
+  /* Focus Animations */
+  --spike-focus-scale: scale(1.01);
+  --spike-focus-ring-scale: scale(1.1);
+  
+  /* Loading Animation Durations */
+  --spike-spinner-duration: 1s;
+  --spike-pulse-duration: 2s;
+  --spike-bounce-duration: 1s;
+  --spike-fade-duration: 1.5s;
+}
+
+/* Keyframe Animations */
+
+/* Spinner/Loading Animations */
+@keyframes spike-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spike-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes spike-bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+@keyframes spike-ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Fade Animations */
+@keyframes spike-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spike-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Slide Animations */
+@keyframes spike-slide-in-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spike-slide-in-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spike-slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spike-slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Scale Animations */
+@keyframes spike-scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes spike-scale-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* Progress Bar Animation */
+@keyframes spike-progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Button Press Animation */
+@keyframes spike-button-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Shake Animation (for errors) */
+@keyframes spike-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-4px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+/* Notification Slide Animations */
+@keyframes spike-notification-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spike-notification-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Utility Animation Classes */
+
+/* Loading States */
+.spike-animate-spin {
+  animation: spike-spin var(--spike-spinner-duration) linear infinite;
+}
+
+.spike-animate-pulse {
+  animation: spike-pulse var(--spike-pulse-duration) cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.spike-animate-bounce {
+  animation: spike-bounce var(--spike-bounce-duration) infinite;
+}
+
+.spike-animate-ping {
+  animation: spike-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Transition States */
+.spike-animate-fade-in {
+  animation: spike-fade-in var(--spike-duration-normal) var(--spike-ease-out);
+}
+
+.spike-animate-fade-out {
+  animation: spike-fade-out var(--spike-duration-normal) var(--spike-ease-out);
+}
+
+.spike-animate-slide-in-up {
+  animation: spike-slide-in-up var(--spike-duration-normal) var(--spike-ease-out);
+}
+
+.spike-animate-slide-in-down {
+  animation: spike-slide-in-down var(--spike-duration-normal) var(--spike-ease-out);
+}
+
+.spike-animate-scale-in {
+  animation: spike-scale-in var(--spike-duration-fast) var(--spike-ease-out);
+}
+
+.spike-animate-shake {
+  animation: spike-shake 0.5s var(--spike-ease-out);
+}
+
+/* Interactive States */
+.spike-hover-lift:hover {
+  transform: var(--spike-hover-lift);
+  transition: var(--spike-transition-transform);
+}
+
+.spike-hover-scale:hover {
+  transform: var(--spike-hover-scale);
+  transition: var(--spike-transition-transform);
+}
+
+.spike-focus-scale:focus {
+  transform: var(--spike-focus-scale);
+  transition: var(--spike-transition-transform);
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --spike-duration-fast: 0ms;
+    --spike-duration-normal: 0ms;
+    --spike-duration-slow: 0ms;
+    --spike-duration-slower: 0ms;
+    --spike-duration-slowest: 0ms;
+  }
+  
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Performance optimizations */
+.spike-will-change-transform {
+  will-change: transform;
+}
+
+.spike-will-change-opacity {
+  will-change: opacity;
+}
+
+.spike-will-change-auto {
+  will-change: auto;
+}

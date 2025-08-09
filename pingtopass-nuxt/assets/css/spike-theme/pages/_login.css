@@ -1,0 +1,75 @@
+/* Spike Theme - Login Page Styles */
+
+.spike-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spike-space-4);
+  background: linear-gradient(135deg, var(--spike-primary-alpha-10) 0%, var(--spike-surface) 100%);
+}
+
+.spike-login-container {
+  max-width: 28rem;
+  width: 100%;
+  background: var(--spike-surface);
+  border-radius: 12px;
+  box-shadow: var(--spike-shadow-xl);
+  padding: var(--spike-space-10);
+}
+
+.spike-login-header {
+  text-align: center;
+  margin-bottom: var(--spike-space-8);
+}
+
+.spike-login-title {
+  font-size: var(--spike-font-size-3xl);
+  font-weight: var(--spike-font-weight-bold);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-2);
+}
+
+.spike-login-subtitle {
+  font-size: var(--spike-font-size-base);
+  color: var(--spike-text-secondary);
+}
+
+.spike-login-footer {
+  text-align: center;
+  margin-top: var(--spike-space-8);
+  font-size: var(--spike-font-size-sm);
+  color: var(--spike-text-secondary);
+}
+
+.spike-login-links {
+  display: flex;
+  justify-content: center;
+  gap: var(--spike-space-4);
+  margin-top: var(--spike-space-2);
+}
+
+.spike-link {
+  color: var(--spike-primary);
+  text-decoration: underline;
+  transition: color var(--spike-duration-fast);
+}
+
+.spike-link:hover {
+  color: var(--spike-primary-dark);
+}
+
+.spike-separator {
+  color: var(--spike-text-muted);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .spike-login-container {
+    padding: var(--spike-space-6);
+  }
+  
+  .spike-login-title {
+    font-size: var(--spike-font-size-2xl);
+  }
+}

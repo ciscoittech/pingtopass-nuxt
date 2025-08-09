@@ -1,0 +1,476 @@
+/**
+ * Theme Integration CSS
+ * 
+ * This file creates a seamless bridge between the Spike theme system
+ * and @nuxt/ui components by:
+ * 
+ * 1. Exposing Spike colors as RGB values for @nuxt/ui
+ * 2. Ensuring proper CSS custom property mapping
+ * 3. Maintaining visual consistency across both systems
+ * 4. Providing fallbacks and accessibility enhancements
+ */
+
+/* ===== CSS CUSTOM PROPERTIES BRIDGE ===== */
+
+:root {
+  /* Map Spike theme colors to @nuxt/ui RGB format */
+  
+  /* Primary color mapping (Spike blue) - Generated from #0085db */
+  --spike-50: 227, 242, 253;   /* #e3f2fd */
+  --spike-100: 187, 222, 251;  /* #bbdefb */
+  --spike-200: 144, 202, 249;  /* #90caf9 */
+  --spike-300: 100, 181, 246;  /* #64b5f6 */
+  --spike-400: 66, 165, 245;   /* #42a5f5 */
+  --spike-500: 0, 133, 219;    /* #0085db - PRIMARY */
+  --spike-600: 0, 107, 184;    /* #006bb8 */
+  --spike-700: 0, 81, 149;     /* #005195 */
+  --spike-800: 0, 55, 114;     /* #003772 */
+  --spike-900: 0, 29, 79;      /* #001d4f */
+  --spike-950: 0, 18, 38;      /* #001226 */
+  
+  /* Neutral/Gray color mapping (consistent with Spike neutral scale) */
+  --neutral-50: 248, 249, 250;  /* #f8f9fa */
+  --neutral-100: 233, 236, 239; /* #e9ecef */
+  --neutral-200: 222, 226, 230; /* #dee2e6 */
+  --neutral-300: 206, 212, 218; /* #ced4da */
+  --neutral-400: 173, 181, 189; /* #adb5bd */
+  --neutral-500: 108, 117, 125; /* #6c757d */
+  --neutral-600: 73, 80, 87;    /* #495057 */
+  --neutral-700: 52, 58, 64;    /* #343a40 */
+  --neutral-800: 33, 37, 41;    /* #212529 */
+  --neutral-900: 0, 0, 0;       /* #000000 */
+  --neutral-950: 0, 0, 0;       /* #000000 */
+  
+  /* Semantic colors in RGB format for @nuxt/ui */
+  --color-success-50: 240, 253, 244;   /* Light green */
+  --color-success-100: 220, 252, 231;  /* Very light green */
+  --color-success-200: 187, 247, 208;  /* Light green */
+  --color-success-300: 134, 239, 172;  /* Medium light green */
+  --color-success-400: 74, 222, 128;   /* Medium green */
+  --color-success-500: 40, 167, 69;    /* #28a745 - BASE */
+  --color-success-600: 22, 163, 74;    /* Medium dark green */
+  --color-success-700: 21, 128, 61;    /* Dark green */
+  --color-success-800: 22, 101, 52;    /* Darker green */
+  --color-success-900: 20, 83, 45;     /* Darkest green */
+  --color-success-950: 5, 46, 22;      /* Very dark green */
+  
+  --color-warning-50: 255, 251, 235;   /* Light yellow */
+  --color-warning-100: 254, 243, 199;  /* Very light yellow */
+  --color-warning-200: 253, 230, 138;  /* Light yellow */
+  --color-warning-300: 252, 211, 77;   /* Medium light yellow */
+  --color-warning-400: 251, 191, 36;   /* Medium yellow */
+  --color-warning-500: 255, 193, 7;    /* #ffc107 - BASE */
+  --color-warning-600: 245, 158, 11;   /* Medium dark yellow */
+  --color-warning-700: 217, 119, 6;    /* Dark yellow */
+  --color-warning-800: 180, 83, 9;     /* Darker yellow */
+  --color-warning-900: 146, 64, 14;    /* Darkest yellow */
+  --color-warning-950: 120, 53, 15;    /* Very dark yellow */
+  
+  --color-error-50: 254, 242, 242;     /* Light red */
+  --color-error-100: 254, 226, 226;    /* Very light red */
+  --color-error-200: 254, 202, 202;    /* Light red */
+  --color-error-300: 252, 165, 165;    /* Medium light red */
+  --color-error-400: 248, 113, 113;    /* Medium red */
+  --color-error-500: 220, 53, 69;      /* #dc3545 - BASE */
+  --color-error-600: 220, 38, 38;      /* Medium dark red */
+  --color-error-700: 185, 28, 28;      /* Dark red */
+  --color-error-800: 153, 27, 27;      /* Darker red */
+  --color-error-900: 127, 29, 29;      /* Darkest red */
+  --color-error-950: 69, 10, 10;       /* Very dark red */
+  
+  --color-info-50: 240, 249, 255;      /* Light blue */
+  --color-info-100: 224, 242, 254;     /* Very light blue */
+  --color-info-200: 186, 230, 253;     /* Light blue */
+  --color-info-300: 125, 211, 252;     /* Medium light blue */
+  --color-info-400: 56, 189, 248;      /* Medium blue */
+  --color-info-500: 70, 202, 235;      /* #46caeb - BASE */
+  --color-info-600: 2, 132, 199;       /* Medium dark blue */
+  --color-info-700: 3, 105, 161;       /* Dark blue */
+  --color-info-800: 7, 89, 133;        /* Darker blue */
+  --color-info-900: 12, 74, 110;       /* Darkest blue */
+  --color-info-950: 8, 47, 73;         /* Very dark blue */
+}
+
+/* ===== COMPONENT INTEGRATION STYLES ===== */
+
+/* Ensure all @nuxt/ui components inherit Spike typography */
+.ui-button,
+.ui-input,
+.ui-textarea,
+.ui-select,
+.ui-card,
+.ui-modal,
+.ui-dropdown,
+.ui-badge,
+.ui-notification,
+.ui-toggle,
+.ui-checkbox,
+.ui-radio,
+.ui-range,
+.ui-table,
+.ui-tabs,
+.ui-accordion,
+.ui-alert,
+.ui-breadcrumb,
+.ui-pagination,
+.ui-divider {
+  font-family: var(--spike-font-family-base, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
+  font-feature-settings: 'kern';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== BUTTON INTEGRATION ===== */
+.ui-button {
+  /* Use Spike's transition timing and effects */
+  transition: all var(--spike-animation-duration-base, 200ms) var(--spike-animation-easing-base, ease-out);
+  font-weight: 500;
+  
+  /* Ensure proper focus states match Spike theme */
+  &:focus-visible {
+    outline: 2px solid rgb(var(--spike-500));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgb(var(--spike-500) / 0.1);
+  }
+  
+  /* Hover effects */
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--spike-shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1));
+  }
+  
+  /* Active/pressed state */
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  
+  /* Loading state integration */
+  &.loading {
+    cursor: wait;
+    pointer-events: none;
+  }
+}
+
+/* ===== INPUT INTEGRATION ===== */
+.ui-input,
+.ui-textarea,
+.ui-select {
+  /* Ensure focus states match Spike theme */
+  &:focus,
+  &:focus-within {
+    border-color: rgb(var(--spike-500));
+    box-shadow: 0 0 0 3px rgb(var(--spike-500) / 0.1);
+    outline: none;
+  }
+  
+  /* Error state integration */
+  &.error,
+  &[aria-invalid="true"] {
+    border-color: rgb(var(--color-error-500));
+    box-shadow: 0 0 0 3px rgb(var(--color-error-500) / 0.1);
+  }
+  
+  /* Success state integration */
+  &.success {
+    border-color: rgb(var(--color-success-500));
+    box-shadow: 0 0 0 3px rgb(var(--color-success-500) / 0.1);
+  }
+  
+  /* Placeholder styling */
+  &::placeholder {
+    color: rgb(var(--neutral-400));
+    opacity: 1;
+  }
+}
+
+/* ===== CARD INTEGRATION ===== */
+.ui-card {
+  /* Use Spike shadow system */
+  box-shadow: var(--spike-shadow-sm, 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1));
+  transition: all var(--spike-animation-duration-base, 200ms) var(--spike-animation-easing-base, ease-out);
+  
+  &:hover {
+    box-shadow: var(--spike-shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1));
+    transform: translateY(-2px);
+  }
+  
+  /* Interactive cards */
+  &.interactive {
+    cursor: pointer;
+    
+    &:active {
+      transform: translateY(-1px);
+      box-shadow: var(--spike-shadow-sm, 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1));
+    }
+  }
+}
+
+/* ===== MODAL INTEGRATION ===== */
+.ui-modal {
+  /* Use Spike backdrop and transition timing */
+  backdrop-filter: blur(4px);
+  
+  .ui-modal-container {
+    transition: all var(--spike-animation-duration-base, 200ms) var(--spike-animation-easing-base, ease-out);
+    box-shadow: var(--spike-shadow-xl, 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1));
+  }
+  
+  /* Modal header styling */
+  .ui-modal-header {
+    border-bottom: 1px solid rgb(var(--neutral-200));
+  }
+  
+  /* Modal footer styling */
+  .ui-modal-footer {
+    border-top: 1px solid rgb(var(--neutral-200));
+  }
+}
+
+/* ===== DROPDOWN INTEGRATION ===== */
+.ui-dropdown {
+  .ui-dropdown-content {
+    box-shadow: var(--spike-shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1));
+    border: 1px solid rgb(var(--neutral-200));
+  }
+  
+  .ui-dropdown-item {
+    transition: all var(--spike-animation-duration-fast, 150ms) var(--spike-animation-easing-base, ease-out);
+    
+    &:hover {
+      background-color: rgb(var(--spike-50));
+    }
+    
+    &:focus {
+      background-color: rgb(var(--spike-100));
+      outline: 2px solid rgb(var(--spike-500));
+      outline-offset: -2px;
+    }
+  }
+}
+
+/* ===== NOTIFICATION INTEGRATION ===== */
+.ui-notification {
+  box-shadow: var(--spike-shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1));
+  transition: all var(--spike-animation-duration-base, 200ms) var(--spike-animation-easing-base, ease-out);
+  
+  /* Success notification */
+  &.success {
+    border-left: 4px solid rgb(var(--color-success-500));
+    background-color: rgb(var(--color-success-50));
+  }
+  
+  /* Error notification */
+  &.error {
+    border-left: 4px solid rgb(var(--color-error-500));
+    background-color: rgb(var(--color-error-50));
+  }
+  
+  /* Warning notification */
+  &.warning {
+    border-left: 4px solid rgb(var(--color-warning-500));
+    background-color: rgb(var(--color-warning-50));
+  }
+  
+  /* Info notification */
+  &.info {
+    border-left: 4px solid rgb(var(--color-info-500));
+    background-color: rgb(var(--color-info-50));
+  }
+}
+
+/* ===== BADGE INTEGRATION ===== */
+.ui-badge {
+  font-weight: 500;
+  font-size: 0.75rem;
+  
+  /* Primary badge */
+  &.spike {
+    background-color: rgb(var(--spike-500));
+    color: white;
+  }
+  
+  /* Semantic badges */
+  &.success { background-color: rgb(var(--color-success-500)); color: white; }
+  &.warning { background-color: rgb(var(--color-warning-500)); color: rgb(var(--neutral-800)); }
+  &.error { background-color: rgb(var(--color-error-500)); color: white; }
+  &.info { background-color: rgb(var(--color-info-500)); color: white; }
+}
+
+/* ===== RESPONSIVE DESIGN INTEGRATION ===== */
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .ui-button {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 2.5rem; /* 40px minimum touch target */
+  }
+  
+  .ui-card {
+    margin: 0.5rem;
+    border-radius: var(--spike-border-radius-xl, 0.75rem);
+  }
+  
+  .ui-modal {
+    .ui-modal-container {
+      margin: 1rem;
+      max-height: calc(100vh - 2rem);
+    }
+  }
+  
+  .ui-input,
+  .ui-textarea,
+  .ui-select {
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 2.5rem; /* 40px minimum touch target */
+  }
+}
+
+/* Tablet optimization */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .ui-card {
+    margin: 0.75rem;
+  }
+}
+
+/* ===== DARK MODE INTEGRATION ===== */
+
+/* Automatic dark mode based on system preference */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Invert color scales for dark mode while maintaining Spike brand consistency */
+    --spike-50: 0, 18, 38;      /* Darkest becomes lightest */
+    --spike-100: 0, 29, 79;
+    --spike-200: 0, 55, 114;
+    --spike-300: 0, 81, 149;
+    --spike-400: 0, 107, 184;
+    /* Keep primary the same: --spike-500: 0, 133, 219; */
+    --spike-600: 66, 165, 245;
+    --spike-700: 100, 181, 246;
+    --spike-800: 144, 202, 249;
+    --spike-900: 187, 222, 251;
+    --spike-950: 227, 242, 253;
+    
+    /* Adjust neutral colors for dark mode */
+    --neutral-50: 0, 0, 0;
+    --neutral-100: 33, 37, 41;
+    --neutral-200: 52, 58, 64;
+    --neutral-300: 73, 80, 87;
+    --neutral-400: 108, 117, 125;
+    --neutral-500: 173, 181, 189;
+    --neutral-600: 206, 212, 218;
+    --neutral-700: 222, 226, 230;
+    --neutral-800: 233, 236, 239;
+    --neutral-900: 248, 249, 250;
+    --neutral-950: 248, 249, 250;
+  }
+}
+
+/* Class-based dark mode (for explicit dark mode toggle) */
+.dark {
+  /* Same color inversions as media query above */
+  --spike-50: 0, 18, 38;
+  --spike-100: 0, 29, 79;
+  --spike-200: 0, 55, 114;
+  --spike-300: 0, 81, 149;
+  --spike-400: 0, 107, 184;
+  --spike-600: 66, 165, 245;
+  --spike-700: 100, 181, 246;
+  --spike-800: 144, 202, 249;
+  --spike-900: 187, 222, 251;
+  --spike-950: 227, 242, 253;
+  
+  --neutral-50: 0, 0, 0;
+  --neutral-100: 33, 37, 41;
+  --neutral-200: 52, 58, 64;
+  --neutral-300: 73, 80, 87;
+  --neutral-400: 108, 117, 125;
+  --neutral-500: 173, 181, 189;
+  --neutral-600: 206, 212, 218;
+  --neutral-700: 222, 226, 230;
+  --neutral-800: 233, 236, 239;
+  --neutral-900: 248, 249, 250;
+  --neutral-950: 248, 249, 250;
+}
+
+/* ===== ACCESSIBILITY INTEGRATION ===== */
+
+/* Focus management for keyboard users */
+.ui-button:focus-visible,
+.ui-input:focus-visible,
+.ui-select:focus-visible,
+.ui-checkbox:focus-visible,
+.ui-radio:focus-visible {
+  outline: 2px solid rgb(var(--spike-500));
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .ui-button,
+  .ui-card,
+  .ui-input,
+  .ui-select,
+  .ui-modal,
+  .ui-dropdown {
+    border-width: 2px;
+    border-style: solid;
+  }
+  
+  .ui-button {
+    font-weight: 600;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .ui-button,
+  .ui-card,
+  .ui-modal,
+  .ui-dropdown,
+  .ui-notification,
+  .ui-badge,
+  .ui-input,
+  .ui-textarea,
+  .ui-select {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .ui-card:hover {
+    transform: none !important;
+  }
+  
+  .ui-button:hover {
+    transform: none !important;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+
+@media print {
+  .ui-modal,
+  .ui-dropdown,
+  .ui-notification {
+    display: none !important;
+  }
+  
+  .ui-button {
+    background: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+    box-shadow: none !important;
+  }
+  
+  .ui-card {
+    box-shadow: none !important;
+    border: 1px solid black !important;
+  }
+  
+  .ui-input,
+  .ui-textarea,
+  .ui-select {
+    border: 1px solid black !important;
+    box-shadow: none !important;
+  }
+}

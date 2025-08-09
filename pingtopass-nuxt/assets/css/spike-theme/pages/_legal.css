@@ -1,0 +1,151 @@
+/* Spike Theme - Legal Pages (Terms & Privacy) Styles */
+
+.spike-legal-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--spike-background) 0%, var(--spike-surface) 100%);
+  padding: var(--spike-space-16) var(--spike-space-4);
+}
+
+.spike-legal-container {
+  max-width: 1024px;
+  margin: 0 auto;
+}
+
+.spike-legal-card {
+  padding: var(--spike-space-10);
+  background: var(--spike-surface);
+  border-radius: 12px;
+  box-shadow: var(--spike-shadow-lg);
+}
+
+.spike-legal-title {
+  font-size: var(--spike-font-size-4xl);
+  font-weight: var(--spike-font-weight-bold);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-8);
+  text-align: center;
+}
+
+.spike-legal-content {
+  max-width: none;
+}
+
+.spike-legal-date {
+  font-size: var(--spike-font-size-lg);
+  color: var(--spike-text-secondary);
+  margin-bottom: var(--spike-space-8);
+  text-align: center;
+  font-style: italic;
+}
+
+.spike-legal-heading {
+  font-size: var(--spike-font-size-xl);
+  font-weight: var(--spike-font-weight-semibold);
+  color: var(--spike-text-primary);
+  margin-top: var(--spike-space-8);
+  margin-bottom: var(--spike-space-4);
+  padding-bottom: var(--spike-space-2);
+  border-bottom: 2px solid var(--spike-primary-alpha-20);
+}
+
+.spike-legal-subheading {
+  font-size: var(--spike-font-size-lg);
+  font-weight: var(--spike-font-weight-medium);
+  color: var(--spike-text-primary);
+  margin-top: var(--spike-space-6);
+  margin-bottom: var(--spike-space-3);
+}
+
+.spike-legal-text {
+  margin-bottom: var(--spike-space-4);
+  color: var(--spike-text-secondary);
+  line-height: 1.7;
+  font-size: var(--spike-font-size-base);
+}
+
+.spike-legal-list {
+  list-style-type: disc;
+  list-style-position: inside;
+  margin-bottom: var(--spike-space-4);
+  color: var(--spike-text-secondary);
+  padding-left: var(--spike-space-4);
+}
+
+.spike-legal-list li {
+  margin-bottom: var(--spike-space-2);
+  line-height: 1.6;
+}
+
+.spike-legal-list strong {
+  font-weight: var(--spike-font-weight-semibold);
+  color: var(--spike-text-primary);
+}
+
+.spike-legal-link {
+  color: var(--spike-primary);
+  text-decoration: none;
+  font-weight: var(--spike-font-weight-medium);
+  transition: color var(--spike-duration-fast);
+}
+
+.spike-legal-link:hover {
+  color: var(--spike-primary-dark);
+  text-decoration: underline;
+}
+
+.spike-legal-footer {
+  margin-top: var(--spike-space-12);
+  padding-top: var(--spike-space-8);
+  border-top: 2px solid var(--spike-border);
+  text-align: center;
+}
+
+/* Button styles for legal pages */
+.spike-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spike-space-3) var(--spike-space-6);
+  border-radius: 8px;
+  font-weight: var(--spike-font-weight-medium);
+  font-size: var(--spike-font-size-base);
+  cursor: pointer;
+  transition: all var(--spike-duration-fast);
+  border: 2px solid transparent;
+  text-decoration: none;
+}
+
+.spike-button-secondary {
+  background: var(--spike-surface);
+  color: var(--spike-text-primary);
+  border-color: var(--spike-border);
+}
+
+.spike-button-secondary:hover {
+  background: var(--spike-background);
+  border-color: var(--spike-primary);
+  color: var(--spike-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .spike-legal-page {
+    padding: var(--spike-space-8) var(--spike-space-2);
+  }
+  
+  .spike-legal-card {
+    padding: var(--spike-space-6);
+  }
+  
+  .spike-legal-title {
+    font-size: var(--spike-font-size-3xl);
+  }
+  
+  .spike-legal-heading {
+    font-size: var(--spike-font-size-lg);
+  }
+  
+  .spike-legal-subheading {
+    font-size: var(--spike-font-size-base);
+  }
+}

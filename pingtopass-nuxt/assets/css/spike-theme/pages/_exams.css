@@ -1,0 +1,99 @@
+/* Spike Theme - Exams Page Styles */
+
+.spike-exams-page {
+  min-height: 100vh;
+  background: var(--spike-background);
+  padding: var(--spike-space-8) var(--spike-space-4);
+}
+
+.spike-exams-header {
+  text-align: center;
+  margin-bottom: var(--spike-space-10);
+  padding: var(--spike-space-8);
+  background: linear-gradient(135deg, var(--spike-primary-alpha-10) 0%, var(--spike-surface) 100%);
+  border-radius: 12px;
+}
+
+.spike-exams-title {
+  font-size: var(--spike-font-size-4xl);
+  font-weight: var(--spike-font-weight-bold);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-2);
+}
+
+.spike-exams-subtitle {
+  font-size: var(--spike-font-size-lg);
+  color: var(--spike-text-secondary);
+}
+
+/* Filters Section */
+.spike-exams-filters {
+  display: flex;
+  gap: var(--spike-space-4);
+  justify-content: center;
+  margin-bottom: var(--spike-space-8);
+  flex-wrap: wrap;
+}
+
+.spike-filter-select {
+  padding: var(--spike-space-3) var(--spike-space-6);
+  border: 2px solid var(--spike-border);
+  border-radius: 8px;
+  background: var(--spike-surface);
+  color: var(--spike-text-primary);
+  font-size: var(--spike-font-size-base);
+  font-weight: var(--spike-font-weight-medium);
+  cursor: pointer;
+  transition: all var(--spike-duration-fast);
+  min-width: 180px;
+}
+
+.spike-filter-select:hover {
+  border-color: var(--spike-primary);
+  box-shadow: var(--spike-shadow-sm);
+}
+
+.spike-filter-select:focus {
+  outline: none;
+  border-color: var(--spike-primary);
+  box-shadow: 0 0 0 3px var(--spike-primary-alpha-20);
+}
+
+/* Content Section */
+.spike-exams-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spike-space-8);
+  background: var(--spike-surface);
+  border-radius: 12px;
+  box-shadow: var(--spike-shadow-sm);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .spike-exams-page {
+    padding: var(--spike-space-4) var(--spike-space-2);
+  }
+  
+  .spike-exams-header {
+    padding: var(--spike-space-6);
+  }
+  
+  .spike-exams-title {
+    font-size: var(--spike-font-size-3xl);
+  }
+  
+  .spike-exams-filters {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .spike-filter-select {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .spike-exams-content {
+    padding: var(--spike-space-4);
+  }
+}

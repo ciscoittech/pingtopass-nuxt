@@ -1,0 +1,104 @@
+/* Spike Theme - Dashboard Page Styles */
+
+.spike-dashboard-page {
+  min-height: 100vh;
+  background: var(--spike-background);
+  padding: var(--spike-space-8) var(--spike-space-4);
+}
+
+.spike-dashboard-header {
+  text-align: center;
+  margin-bottom: var(--spike-space-10);
+  padding: var(--spike-space-8);
+  background: linear-gradient(135deg, var(--spike-primary-alpha-10) 0%, var(--spike-surface) 100%);
+  border-radius: 12px;
+}
+
+.spike-dashboard-title {
+  font-size: var(--spike-font-size-4xl);
+  font-weight: var(--spike-font-weight-bold);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-2);
+}
+
+.spike-dashboard-subtitle {
+  font-size: var(--spike-font-size-lg);
+  color: var(--spike-text-secondary);
+}
+
+/* Quick Actions Grid */
+.spike-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spike-space-4);
+  margin-bottom: var(--spike-space-10);
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.spike-action-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spike-space-2);
+  padding: var(--spike-space-6) var(--spike-space-4);
+  text-align: center;
+  transition: transform var(--spike-duration-fast);
+}
+
+.spike-action-button:hover {
+  transform: translateY(-4px);
+}
+
+.spike-action-icon {
+  font-size: 32px;
+  display: block;
+}
+
+/* Dashboard Sections */
+.spike-dashboard-section {
+  max-width: 1200px;
+  margin: 0 auto var(--spike-space-12);
+  padding: var(--spike-space-8);
+  background: var(--spike-surface);
+  border-radius: 12px;
+  box-shadow: var(--spike-shadow-sm);
+}
+
+.spike-dashboard-section .spike-section-title {
+  font-size: var(--spike-font-size-2xl);
+  font-weight: var(--spike-font-weight-bold);
+  color: var(--spike-text-primary);
+  margin-bottom: var(--spike-space-6);
+  padding-bottom: var(--spike-space-4);
+  border-bottom: 2px solid var(--spike-border);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .spike-dashboard-page {
+    padding: var(--spike-space-4) var(--spike-space-2);
+  }
+  
+  .spike-dashboard-header {
+    padding: var(--spike-space-6);
+  }
+  
+  .spike-dashboard-title {
+    font-size: var(--spike-font-size-3xl);
+  }
+  
+  .spike-quick-actions {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spike-space-3);
+  }
+  
+  .spike-action-button {
+    padding: var(--spike-space-4) var(--spike-space-2);
+  }
+  
+  .spike-dashboard-section {
+    padding: var(--spike-space-4);
+  }
+}
